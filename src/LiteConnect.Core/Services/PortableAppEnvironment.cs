@@ -1,4 +1,3 @@
-using System.Reflection;
 using LiteConnect.Core.Abstractions;
 
 namespace LiteConnect.Core.Services;
@@ -22,9 +21,10 @@ public sealed class PortableAppEnvironment : IAppEnvironment
 
     public PortableAppEnvironment()
     {
-        var exeDir = Path.GetDirectoryName(
-            Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location)
-            ?? Directory.GetCurrentDirectory();
+        var exeDir = (Environment.ProcessPath is string processPath
+            ? Path.GetDirectoryName(processPath)
+            : null)
+            ?? AppContext.BaseDirectory;
 
         IsPortable = File.Exists(Path.Combine(exeDir, MarkerFile));
 
