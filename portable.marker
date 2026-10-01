@@ -1,0 +1,5 @@
+This file enables LiteConnect portable mode.
+When present in the same directory as LiteConnect.exe, all data (connections.db,
+dpapi.key, logs/) will be stored alongside the executable instead of in %APPDATA%.
+
+Delete this file to switch to installed mode (data goes to %APPDATA%\LiteConnect).

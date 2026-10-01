@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>LiteConnect.Protocols</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LiteConnect.Core\LiteConnect.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      SSH.NET 2026.0.0 — upgraded from 2024.2.0 which had 4 high-severity CVEs.
+      2026.0.0 fixes: GHSA-mggc-4xg6-vcxf, GHSA-q939-rpr3-3284,
+                      GHSA-vhpg-4g9v-rppq, GHSA-h5q6-2gr6-3g3m
+    -->
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
+  </ItemGroup>
+
+  <!--
+    NOTE: The RDP ActiveX control (MSTSCLib) cannot be referenced via <COMReference> in
+    the .NET CLI build (MSB4803). Instead we reference it via the Windows-provided
+    MSTSCLib.dll through early-binding interop generated at dev time, OR use late binding
+    via dynamic/reflection. The AxMsRdpClient9NotSafeForScripting wrapper is generated
+    during Visual Studio build. For CLI builds, the RdpSession class uses late-bound
+    COM interop via Marshal.GetActiveObject / Type.GetTypeFromProgID patterns.
+    See: src/LiteConnect.Protocols/Rdp/RdpInterop.cs
+  -->
+
+</Project>

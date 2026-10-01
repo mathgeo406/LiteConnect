@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0CF0D0EB-7972-4304-AB63-B4F21A8633A9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteConnect.App", "src\LiteConnect.App\LiteConnect.App.csproj", "{AA01ECCE-0A9C-41EA-A592-FF646E65F5B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteConnect.Core", "src\LiteConnect.Core\LiteConnect.Core.csproj", "{B2EB9CAC-951F-491B-A1FA-A46DDEAEE1A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteConnect.Protocols", "src\LiteConnect.Protocols\LiteConnect.Protocols.csproj", "{A60B326C-838D-4B96-8120-D1361F342DF5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteConnect.Terminal", "src\LiteConnect.Terminal\LiteConnect.Terminal.csproj", "{FF6186EC-70F8-4E66-A1CC-D7B4B47F2672}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6065B751-035D-462F-8A57-C5BC1D77DAD4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteConnect.Core.Tests", "tests\LiteConnect.Core.Tests\LiteConnect.Core.Tests.csproj", "{B37D7EC3-5A46-49BE-9F8C-FB089FA64F83}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AA01ECCE-0A9C-41EA-A592-FF646E65F5B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA01ECCE-0A9C-41EA-A592-FF646E65F5B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA01ECCE-0A9C-41EA-A592-FF646E65F5B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA01ECCE-0A9C-41EA-A592-FF646E65F5B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2EB9CAC-951F-491B-A1FA-A46DDEAEE1A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2EB9CAC-951F-491B-A1FA-A46DDEAEE1A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2EB9CAC-951F-491B-A1FA-A46DDEAEE1A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2EB9CAC-951F-491B-A1FA-A46DDEAEE1A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A60B326C-838D-4B96-8120-D1361F342DF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A60B326C-838D-4B96-8120-D1361F342DF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A60B326C-838D-4B96-8120-D1361F342DF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A60B326C-838D-4B96-8120-D1361F342DF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF6186EC-70F8-4E66-A1CC-D7B4B47F2672}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF6186EC-70F8-4E66-A1CC-D7B4B47F2672}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF6186EC-70F8-4E66-A1CC-D7B4B47F2672}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF6186EC-70F8-4E66-A1CC-D7B4B47F2672}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B37D7EC3-5A46-49BE-9F8C-FB089FA64F83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B37D7EC3-5A46-49BE-9F8C-FB089FA64F83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B37D7EC3-5A46-49BE-9F8C-FB089FA64F83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B37D7EC3-5A46-49BE-9F8C-FB089FA64F83}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AA01ECCE-0A9C-41EA-A592-FF646E65F5B8} = {0CF0D0EB-7972-4304-AB63-B4F21A8633A9}
+		{B2EB9CAC-951F-491B-A1FA-A46DDEAEE1A6} = {0CF0D0EB-7972-4304-AB63-B4F21A8633A9}
+		{A60B326C-838D-4B96-8120-D1361F342DF5} = {0CF0D0EB-7972-4304-AB63-B4F21A8633A9}
+		{FF6186EC-70F8-4E66-A1CC-D7B4B47F2672} = {0CF0D0EB-7972-4304-AB63-B4F21A8633A9}
+		{B37D7EC3-5A46-49BE-9F8C-FB089FA64F83} = {6065B751-035D-462F-8A57-C5BC1D77DAD4}
+	EndGlobalSection
+EndGlobal

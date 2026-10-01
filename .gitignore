@@ -1,0 +1,41 @@
+## .NET / Visual Studio build outputs
+bin/
+obj/
+out/
+publish/
+artifacts/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*_wpftmp.csproj
+
+## IDE directories
+.vs/
+.vscode/
+.idea/
+
+## Test results & coverage
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+## LiteConnect local runtime data & logs (never commit user DB or keys!)
+/data/
+/logs/
+/publish/
+*.db
+*.db-shm
+*.db-wal
+*.key
+*.lcx
+
+## OS / Temp files
+Thumbs.db
+.DS_Store
+*.tmp
+*.bak
+*.swp

@@ -1,0 +1,49 @@
+using LiteConnect.Core.Models;
+
+namespace LiteConnect.Core.Abstractions;
+
+/// <summary>
+/// Records raw SSH terminal output to disk in three selectable formats.
+/// A single <see cref="ISessionRecorder"/> is created per SSH tab via the factory.
+/// </summary>
+public interface ISessionRecorder : IDisposable
+{
+    /// <summary>True while recording is active (and not paused).</summary>
+    bool IsRecording { get; }
+
+    /// <summary>Path to the active log file; null when not recording.</summary>
+    string? CurrentLogPath { get; }
+
+    /// <summary>Begin recording to <paramref name="filePath"/>.</summary>
+    Task StartAsync(string filePath, RecordingFormat format, CancellationToken ct = default);
+
+    /// <summary>Flush and close the current log file.</summary>
+    Task StopAsync();
+
+    /// <summary>Pause recording — incoming data is discarded while paused.</summary>
+    void Pause();
+
+    /// <summary>Resume recording after a pause.</summary>
+    void Resume();
+
+    /// <summary>
+    /// Receives raw bytes from the SSH stream.
+    /// Called on whatever thread delivers SSH data; must be thread-safe.
+    /// </summary>
+    void Write(ReadOnlySpan<byte> data, DateTimeOffset timestamp);
+
+    /// <summary>Fires when recording state changes (start/stop/pause/resume).</summary>
+    event EventHandler<RecordingStateChangedEventArgs> StateChanged;
+}
+
+public sealed class RecordingStateChangedEventArgs(bool isRecording, string? logPath) : EventArgs
+{
+    public bool IsRecording { get; } = isRecording;
+    public string? LogPath { get; } = logPath;
+}
+
+/// <summary>Factory that creates one <see cref="ISessionRecorder"/> per SSH session tab.</summary>
+public interface ISessionRecorderFactory
+{
+    ISessionRecorder CreateRecorder();
+}

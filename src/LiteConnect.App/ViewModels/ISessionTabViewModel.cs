@@ -1,0 +1,38 @@
+using CommunityToolkit.Mvvm.Input;
+using LiteConnect.Core.Models;
+
+namespace LiteConnect.App.ViewModels;
+
+/// <summary>
+/// Contract for any session that can live in a tab.
+/// ViewModels for SSH, RDP, and VNC implement this.
+/// </summary>
+public interface ISessionTabViewModel : IDisposable
+{
+    /// <summary>Text shown in the tab header.</summary>
+    string DisplayName { get; }
+
+    /// <summary>Status icon shown in the tab header (🟢 connected / 🔴 disconnected / 🟡 connecting).</summary>
+    string StatusIcon { get; }
+
+    /// <summary>Current lifecycle state of the underlying protocol session.</summary>
+    SessionState State { get; }
+
+    /// <summary>True when this tab is the selected one.</summary>
+    bool IsActive { get; set; }
+
+    /// <summary>Command that closes (removes) this tab.</summary>
+    IRelayCommand CloseCommand { get; }
+
+    /// <summary>Command to reconnect the session.</summary>
+    IRelayCommand? ReconnectCommand { get; }
+
+    /// <summary>Command to disconnect the session.</summary>
+    IRelayCommand? DisconnectCommand { get; }
+
+    /// <summary>Command to enter full-screen mode.</summary>
+    IRelayCommand? FullScreenCommand { get; }
+
+    /// <summary>Command to open the connection properties dialog.</summary>
+    IRelayCommand? PropertiesCommand { get; }
+}

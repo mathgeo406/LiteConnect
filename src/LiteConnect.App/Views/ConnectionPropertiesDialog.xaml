@@ -1,0 +1,711 @@
+<Window x:Class="LiteConnect.App.Views.ConnectionPropertiesDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:LiteConnect.App.ViewModels"
+        Title="Connection Properties"
+        Height="620" Width="680"
+        MinHeight="520" MinWidth="600"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        ResizeMode="CanResizeWithGrip"
+        Background="#1E1E1E">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="Dlg.Background"       Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="Dlg.Panel"            Color="#252526"/>
+        <SolidColorBrush x:Key="Dlg.Border"           Color="#3C3C3C"/>
+        <SolidColorBrush x:Key="Dlg.Foreground"       Color="#D4D4D4"/>
+        <SolidColorBrush x:Key="Dlg.Foreground.Muted" Color="#858585"/>
+        <SolidColorBrush x:Key="Dlg.Accent"           Color="#007ACC"/>
+        <SolidColorBrush x:Key="Dlg.Input.Bg"         Color="#3C3C3C"/>
+        <SolidColorBrush x:Key="Dlg.Input.Border"     Color="#555555"/>
+        <SolidColorBrush x:Key="Dlg.Tab.Active"       Color="#007ACC"/>
+        <SolidColorBrush x:Key="Dlg.Tab.Inactive"     Color="#2D2D2D"/>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Dlg.Foreground.Muted}"/>
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="Margin"     Value="0,0,0,3"/>
+        </Style>
+
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Dlg.Foreground.Muted}"/>
+            <Setter Property="FontSize"   Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin"     Value="0,4,0,8"/>
+        </Style>
+
+        <Style x:Key="FieldInput" TargetType="TextBox">
+            <Setter Property="Background"               Value="{DynamicResource Dlg.Input.Bg}"/>
+            <Setter Property="Foreground"               Value="{DynamicResource Dlg.Foreground}"/>
+            <Setter Property="CaretBrush"               Value="{DynamicResource Dlg.Foreground}"/>
+            <Setter Property="BorderBrush"              Value="{DynamicResource Dlg.Input.Border}"/>
+            <Setter Property="BorderThickness"          Value="1"/>
+            <Setter Property="Padding"                  Value="6,5"/>
+            <Setter Property="FontSize"                 Value="13"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="FieldPassword" TargetType="PasswordBox">
+            <Setter Property="Background"      Value="{DynamicResource Dlg.Input.Bg}"/>
+            <Setter Property="Foreground"      Value="{DynamicResource Dlg.Foreground}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource Dlg.Input.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="6,5"/>
+            <Setter Property="FontSize"        Value="13"/>
+        </Style>
+
+        <Style x:Key="FieldCombo" TargetType="ComboBox">
+            <Setter Property="Background"      Value="{DynamicResource Dlg.Input.Bg}"/>
+            <Setter Property="Foreground"      Value="{DynamicResource Dlg.Foreground}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource Dlg.Input.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="6,5"/>
+            <Setter Property="FontSize"        Value="13"/>
+        </Style>
+
+        <Style x:Key="FieldCheck" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource Dlg.Foreground}"/>
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="Margin"     Value="0,0,0,6"/>
+        </Style>
+
+        <Style TargetType="Separator">
+            <Setter Property="Background" Value="{DynamicResource Dlg.Border}"/>
+            <Setter Property="Margin"     Value="0,10,0,10"/>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- ── Dialog footer: OK / Cancel ─────────────────────────────── -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource Dlg.Panel}"
+                BorderBrush="{DynamicResource Dlg.Border}"
+                BorderThickness="0,1,0,0"
+                Padding="12,8">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="OK"
+                        Width="80" Height="30"
+                        Margin="0,0,8,0"
+                        Background="{DynamicResource Dlg.Accent}"
+                        Foreground="White"
+                        BorderBrush="Transparent"
+                        FontSize="13"
+                        IsDefault="True"
+                        Click="BtnOk_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bd"
+                                                Background="{TemplateBinding Background}"
+                                                CornerRadius="3"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#1C97EA"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="Cancel"
+                        Width="80" Height="30"
+                        Background="#3C3C3C"
+                        Foreground="{DynamicResource Dlg.Foreground}"
+                        BorderBrush="{DynamicResource Dlg.Input.Border}"
+                        FontSize="13"
+                        IsCancel="True"
+                        Click="BtnCancel_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bd"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="3"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#4C4C4C"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- ── Tab strip + content ─────────────────────────────────────── -->
+        <TabControl x:Name="TabControl"
+                    Background="{DynamicResource Dlg.Background}"
+                    BorderBrush="{DynamicResource Dlg.Border}"
+                    BorderThickness="0">
+
+            <TabControl.ItemContainerStyle>
+                <Style TargetType="TabItem">
+                    <Setter Property="Background" Value="{DynamicResource Dlg.Tab.Inactive}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Dlg.Foreground.Muted}"/>
+                    <Setter Property="Padding"    Value="12,6"/>
+                    <Setter Property="FontSize"   Value="12"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TabControl.ItemContainerStyle>
+
+            <!-- ════ 1. Connection tab ═════════════════════════════════════ -->
+            <TabItem Header="Connection">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Display Name" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="TxtName" Style="{StaticResource FieldInput}"/>
+                        </StackPanel>
+
+                        <Separator/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Protocol" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Hostname / IP" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="0" Text="Port" Style="{StaticResource FieldLabel}"/>
+
+                            <ComboBox x:Name="CboProtocol"
+                                      Grid.Column="0" Grid.Row="1"
+                                      Style="{StaticResource FieldCombo}"
+                                      SelectionChanged="CboProtocol_SelectionChanged"/>
+                            <TextBox  x:Name="TxtHostname"
+                                      Grid.Column="2" Grid.Row="1"
+                                      Style="{StaticResource FieldInput}"/>
+                            <TextBox  x:Name="TxtPort"
+                                      Grid.Column="4" Grid.Row="1"
+                                      Style="{StaticResource FieldInput}"/>
+                        </Grid>
+
+                        <Separator/>
+
+                        <TextBlock Text="CREDENTIALS" Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Username" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Password" Style="{StaticResource FieldLabel}"/>
+
+                            <TextBox     x:Name="TxtUsername"
+                                         Grid.Column="0" Grid.Row="1"
+                                         Style="{StaticResource FieldInput}"/>
+                            <PasswordBox x:Name="PwdPassword"
+                                         Grid.Column="2" Grid.Row="1"
+                                         Style="{StaticResource FieldPassword}"/>
+                        </Grid>
+
+                        <!-- RDP-only: Domain -->
+                        <StackPanel x:Name="PanelDomain" Margin="0,0,0,10">
+                            <TextBlock Text="Domain (RDP)" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="TxtDomain" Style="{StaticResource FieldInput}"/>
+                        </StackPanel>
+
+                        <!-- SSH-only: Private key -->
+                        <StackPanel x:Name="PanelSshKey" Margin="0,0,0,10">
+                            <TextBlock Text="Private Key File" Style="{StaticResource FieldLabel}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TxtKeyPath"
+                                         Grid.Column="0"
+                                         Style="{StaticResource FieldInput}"/>
+                                <Button Grid.Column="2" Content="Browse…"
+                                        Background="#3C3C3C"
+                                        Foreground="{DynamicResource Dlg.Foreground}"
+                                        BorderBrush="{DynamicResource Dlg.Input.Border}"
+                                        BorderThickness="1"
+                                        Padding="10,5"
+                                        FontSize="12"
+                                        Click="BtnBrowseKey_Click"/>
+                            </Grid>
+                            <TextBlock Text="Key Passphrase" Style="{StaticResource FieldLabel}" Margin="0,8,0,3"/>
+                            <PasswordBox x:Name="PwdKeyPassphrase" Style="{StaticResource FieldPassword}"/>
+                        </StackPanel>
+
+                        <Separator/>
+
+                        <StackPanel>
+                            <TextBlock Text="Notes" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="TxtNotes"
+                                     Style="{StaticResource FieldInput}"
+                                     Height="60"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ════ 2. SSH tab ════════════════════════════════════════════ -->
+            <TabItem x:Name="TabSsh" Header="SSH">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="12"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Terminal Type" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Encoding" Style="{StaticResource FieldLabel}"/>
+
+                            <ComboBox x:Name="CboTerminalType" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <ComboBox x:Name="CboEncoding" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+
+                            <TextBlock Grid.Column="0" Grid.Row="3" Text="Scrollback Lines" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="3" Text="Keepalive (seconds)" Style="{StaticResource FieldLabel}"/>
+
+                            <TextBox x:Name="TxtScrollback" Grid.Column="0" Grid.Row="4" Style="{StaticResource FieldInput}"/>
+                            <TextBox x:Name="TxtKeepalive" Grid.Column="2" Grid.Row="4" Style="{StaticResource FieldInput}"/>
+                        </Grid>
+
+                        <CheckBox x:Name="ChkCompression"
+                                  Content="Enable compression"
+                                  Style="{StaticResource FieldCheck}"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ════ 3. RDP Display tab (Sprint 3.6) ═══════════════════════ -->
+            <TabItem x:Name="TabRdpDisplay" Header="Display">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <TextBlock Text="DISPLAY &amp; RESOLUTION" Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="120"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Resolution Mode" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Custom Width" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="0" Text="Custom Height" Style="{StaticResource FieldLabel}"/>
+
+                            <ComboBox x:Name="CboResolutionMode"
+                                      Grid.Column="0" Grid.Row="1"
+                                      Style="{StaticResource FieldCombo}"
+                                      SelectionChanged="CboResolutionMode_SelectionChanged"/>
+                            <TextBox  x:Name="TxtRdpWidth"
+                                      Grid.Column="2" Grid.Row="1"
+                                      Style="{StaticResource FieldInput}"/>
+                            <TextBox  x:Name="TxtRdpHeight"
+                                      Grid.Column="4" Grid.Row="1"
+                                      Style="{StaticResource FieldInput}"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Color Depth (bits)" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="DPI Scaling (%)" Style="{StaticResource FieldLabel}"/>
+
+                            <ComboBox x:Name="CboColorDepth" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <ComboBox x:Name="CboDpiScaling" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                        </Grid>
+
+                        <Separator/>
+
+                        <CheckBox x:Name="ChkSmartSizing"
+                                  Content="Smart sizing (scale remote desktop to fit tab)"
+                                  Style="{StaticResource FieldCheck}"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ════ 4. RDP Gateway tab (Sprint 3.6) ═══════════════════════ -->
+            <TabItem x:Name="TabRdpGateway" Header="Gateway">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <TextBlock Text="REMOTE DESKTOP GATEWAY" Style="{StaticResource SectionHeader}"/>
+
+                        <CheckBox x:Name="ChkUseGateway"
+                                  Content="Use an RD Gateway server"
+                                  Style="{StaticResource FieldCheck}"
+                                  Margin="0,0,0,12"/>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="140"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Gateway Server (FQDN)" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Port" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="0" Text="Auth Method" Style="{StaticResource FieldLabel}"/>
+
+                            <TextBox  x:Name="TxtGatewayHost" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <TextBox  x:Name="TxtGatewayPort" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <ComboBox x:Name="CboGatewayAuth" Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                        </Grid>
+
+                        <CheckBox x:Name="ChkGatewayBypassLocal"
+                                  Content="Bypass RD Gateway server for local addresses"
+                                  Style="{StaticResource FieldCheck}"/>
+
+                        <Separator/>
+
+                        <TextBlock Text="GATEWAY CREDENTIALS (LEAVE BLANK TO SHARE TARGET CREDENTIALS)"
+                                   Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Gateway Username" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Gateway Password" Style="{StaticResource FieldLabel}"/>
+
+                            <TextBox     x:Name="TxtGatewayUsername" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <PasswordBox x:Name="PwdGatewayPassword" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldPassword}"/>
+
+                            <TextBlock Grid.Column="0" Grid.Row="3" Text="Gateway Domain" Style="{StaticResource FieldLabel}"/>
+                            <TextBox   x:Name="TxtGatewayDomain" Grid.Column="0" Grid.Row="4" Style="{StaticResource FieldInput}"/>
+                        </Grid>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ════ 5. RDP Resources tab (Sprint 3.6) ═════════════════════ -->
+            <TabItem x:Name="TabRdpResources" Header="Resources">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <TextBlock Text="AUDIO &amp; KEYBOARD" Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Audio Playback" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Audio Recording" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="0" Text="Keyboard Shortcuts" Style="{StaticResource FieldLabel}"/>
+
+                            <ComboBox x:Name="CboAudioPlayback"  Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <ComboBox x:Name="CboAudioRecording" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <ComboBox x:Name="CboKeyboardHook"   Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                        </Grid>
+
+                        <Separator/>
+
+                        <TextBlock Text="LOCAL DEVICES &amp; RESOURCES" Style="{StaticResource SectionHeader}"/>
+
+                        <CheckBox x:Name="ChkClipboard"   Content="Redirect clipboard"   Style="{StaticResource FieldCheck}"/>
+                        <CheckBox x:Name="ChkPrinters"    Content="Redirect printers"    Style="{StaticResource FieldCheck}"/>
+                        <CheckBox x:Name="ChkSmartCards"  Content="Redirect smart cards" Style="{StaticResource FieldCheck}"/>
+                        <CheckBox x:Name="ChkRedirectUsb" Content="Redirect USB / RemoteFX devices" Style="{StaticResource FieldCheck}"/>
+                        <CheckBox x:Name="ChkDrives"      Content="Redirect local drives" Style="{StaticResource FieldCheck}"/>
+
+                        <StackPanel Margin="24,4,0,0">
+                            <TextBlock Text="Drive letters to redirect (e.g. ALL or C,D)" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="TxtDriveLetters" Style="{StaticResource FieldInput}" Width="240" HorizontalAlignment="Left"/>
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ════ 6. RDP Experience tab (Sprint 3.6) ════════════════════ -->
+            <TabItem x:Name="TabRdpExperience" Header="Experience">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <TextBlock Text="PERFORMANCE &amp; VISUAL EXPERIENCE" Style="{StaticResource SectionHeader}"/>
+
+                        <StackPanel Margin="0,0,0,12" Width="280" HorizontalAlignment="Left">
+                            <TextBlock Text="Connection Speed" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox x:Name="CboConnectionSpeed" Style="{StaticResource FieldCombo}"/>
+                        </StackPanel>
+
+                        <Separator/>
+
+                        <CheckBox x:Name="ChkDesktopBackground"  Content="Desktop background (wallpaper)" Style="{StaticResource FieldCheck}"/>
+                        <CheckBox x:Name="ChkFontSmoothing"      Content="Font smoothing (ClearType)"     Style="{StaticResource FieldCheck}"/>
+                        <CheckBox x:Name="ChkDesktopComposition" Content="Desktop composition (Aero/DWM)" Style="{StaticResource FieldCheck}"/>
+                        <CheckBox x:Name="ChkVisualStyles"       Content="Visual styles / themes"         Style="{StaticResource FieldCheck}"/>
+                        <CheckBox x:Name="ChkBitmapCaching"      Content="Persistent bitmap caching"      Style="{StaticResource FieldCheck}"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ════ 7. Proxy tab (SSH / VNC) ══════════════════════════════ -->
+            <TabItem x:Name="TabProxy" Header="Proxy">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Proxy Type" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Proxy Host" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="0" Text="Port" Style="{StaticResource FieldLabel}"/>
+
+                            <ComboBox x:Name="CboProxyType" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <TextBox  x:Name="TxtProxyHost" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <TextBox  x:Name="TxtProxyPort" Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Proxy Username" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Proxy Password" Style="{StaticResource FieldLabel}"/>
+
+                            <TextBox     x:Name="TxtProxyUsername" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <PasswordBox x:Name="PwdProxyPassword" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldPassword}"/>
+                        </Grid>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ════ 8. Advanced tab (Sprint 3.6 + Recording) ══════════════ -->
+            <TabItem Header="Advanced">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <!-- RDP Advanced section -->
+                        <StackPanel x:Name="PanelRdpAdvanced">
+                            <TextBlock Text="RDP SECURITY &amp; SESSION" Style="{StaticResource SectionHeader}"/>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="140"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Column="0" Grid.Row="0" Text="Server Authentication Level" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Grid.Column="2" Grid.Row="0" Text="Timeout (sec)" Style="{StaticResource FieldLabel}"/>
+
+                                <ComboBox x:Name="CboAuthLevel" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                                <TextBox  x:Name="TxtConnectTimeout" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            </Grid>
+
+                            <CheckBox x:Name="ChkNla"            Content="Use Network Level Authentication (NLA)" Style="{StaticResource FieldCheck}"/>
+                            <CheckBox x:Name="ChkEnableCredSsp"  Content="Enable CredSSP support"                 Style="{StaticResource FieldCheck}"/>
+                            <CheckBox x:Name="ChkConsoleSession" Content="Connect to console / admin session"     Style="{StaticResource FieldCheck}"/>
+
+                            <Separator/>
+
+                            <TextBlock Text="AUTO-RECONNECT &amp; STARTUP PROGRAM" Style="{StaticResource SectionHeader}"/>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="120"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <CheckBox x:Name="ChkAutoReconnect"
+                                          Grid.Column="0" Grid.Row="1"
+                                          VerticalAlignment="Center"
+                                          Content="Auto-reconnect on drop"
+                                          Style="{StaticResource FieldCheck}"
+                                          Margin="0"/>
+
+                                <TextBlock Grid.Column="2" Grid.Row="0" Text="Max Attempts" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Grid.Column="4" Grid.Row="0" Text="Interval (sec)" Style="{StaticResource FieldLabel}"/>
+
+                                <TextBox x:Name="TxtMaxReconnectAttempts" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                                <TextBox x:Name="TxtReconnectInterval"    Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Column="0" Grid.Row="0" Text="Start Program on Connect" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Grid.Column="2" Grid.Row="0" Text="Working Directory" Style="{StaticResource FieldLabel}"/>
+
+                                <TextBox x:Name="TxtStartProgram" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                                <TextBox x:Name="TxtWorkDir"      Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            </Grid>
+
+                            <StackPanel Margin="0,0,0,6">
+                                <TextBlock Text="Load Balancing Info (RD Connection Broker)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox x:Name="TxtLoadBalancingInfo" Style="{StaticResource FieldInput}"/>
+                            </StackPanel>
+
+                            <Separator/>
+                        </StackPanel>
+
+                        <!-- Session Recording section -->
+                        <TextBlock Text="SESSION RECORDING" Style="{StaticResource SectionHeader}"/>
+
+                        <CheckBox x:Name="ChkAutoRecord"
+                                  Content="Auto-start recording when session opens"
+                                  Style="{StaticResource FieldCheck}"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="160"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Recording Directory" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Recording Format" Style="{StaticResource FieldLabel}"/>
+
+                            <TextBox  x:Name="TxtRecordDir"    Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <ComboBox x:Name="CboRecordFormat" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                        </Grid>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+    </DockPanel>
+</Window>

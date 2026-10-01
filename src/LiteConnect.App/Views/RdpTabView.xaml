@@ -1,0 +1,66 @@
+<UserControl x:Class="LiteConnect.App.Views.RdpTabView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:LiteConnect.App.Converters"
+             Background="#1E1E1E"
+             SizeChanged="RdpTabView_SizeChanged"
+             DataContextChanged="RdpTabView_DataContextChanged"
+             Unloaded="RdpTabView_Unloaded">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- ActiveX WindowsFormsHost container (collapsed when disconnected so WPF overlay renders cleanly) -->
+        <Border x:Name="HostContainer"
+                Background="#000000"
+                Visibility="{Binding IsDisconnectedOrError,
+                                     Converter={StaticResource BoolToVisibility},
+                                     ConverterParameter=inverse}"/>
+
+        <!-- Disconnected / Error overlay with reason + Reconnect button (Sprint 3.4 & 3.5) -->
+        <Border Background="#1E1E1E"
+                Visibility="{Binding IsDisconnectedOrError, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        MaxWidth="480">
+                <TextBlock Text="🖥️  RDP Session Disconnected"
+                           Foreground="#D4D4D4"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,10"/>
+
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="#9E9E9E"
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,20"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Reconnect"
+                            Command="{Binding ReconnectCommand}"
+                            Padding="18,8"
+                            Margin="0,0,10,0"
+                            Background="#007ACC"
+                            Foreground="White"
+                            BorderBrush="Transparent"
+                            FontSize="13"
+                            Cursor="Hand"/>
+                    <Button Content="Close Tab"
+                            Command="{Binding CloseCommand}"
+                            Padding="16,8"
+                            Background="#3C3C3C"
+                            Foreground="#D4D4D4"
+                            BorderBrush="#555555"
+                            BorderThickness="1"
+                            FontSize="13"
+                            Cursor="Hand"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
