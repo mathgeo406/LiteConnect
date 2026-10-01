@@ -25,72 +25,92 @@ public partial class App : WpfApplication
     {
         base.OnStartup(e);
 
+        DispatcherUnhandledException += (_, args) =>
+        {
+            var errPath = System.IO.Path.Combine(AppContext.BaseDirectory, "startup_error.log");
+            System.IO.File.WriteAllText(errPath, args.Exception.ToString());
+        };
+
         // Prevent WPF from shutting down when a startup modal dialog (e.g. MasterPasswordDialog) closes
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-        _host = Host.CreateDefaultBuilder()
-            .ConfigureServices((_, services) =>
-            {
-                // ── Core services ────────────────────────────────────────────
-                services.AddSingleton<IAppEnvironment, PortableAppEnvironment>();
-                services.AddSingleton<SqlCipherCredentialStore>();
-                services.AddSingleton<ICredentialStore>(sp => sp.GetRequiredService<SqlCipherCredentialStore>());
-                services.AddSingleton<IConnectionRepository, LiteConnect.Core.Data.SqliteConnectionRepository>();
-                services.AddSingleton<LiteConnect.Core.Data.DatabaseInitializer>();
-
-                // ── App services ─────────────────────────────────────────────
-                services.AddSingleton<AutoLockService>();
-
-                // ── ViewModels ───────────────────────────────────────────────
-                services.AddSingleton<ConnectionTreeViewModel>();
-                services.AddSingleton<MainViewModel>();
-
-                // ── Views ────────────────────────────────────────────────────
-                services.AddSingleton<MainWindow>();
-
-                // ── Protocol sessions ────────────────────────────────────────
-                services.AddTransient<LiteConnect.Protocols.Rdp.RdpSession>();
-            })
-            .Build();
-
-        await _host.StartAsync();
-
-        // ── Initialize Credential Vault (Sprint 4.1, 4.2, 4.3) ───────────────
-        var credentialStore = _host.Services.GetRequiredService<SqlCipherCredentialStore>();
-        bool unlocked = await credentialStore.InitializeAsync();
-
-        if (!unlocked)
+        try
         {
-            if (credentialStore.DpapiPortabilityMismatch)
-            {
-                // Sprint 4.2: Portable vault moved to a different Windows user/PC
-                var portabilityDlg = new DpapiPortabilityDialog(credentialStore);
-                if (portabilityDlg.ShowDialog() != true || !credentialStore.IsUnlocked)
+            _host = Host.CreateDefaultBuilder()
+                .ConfigureServices((_, services) =>
                 {
-                    Shutdown();
-                    return;
+                    // ── Core services ────────────────────────────────────────────
+                    services.AddSingleton<IAppEnvironment, PortableAppEnvironment>();
+                    services.AddSingleton<SqlCipherCredentialStore>();
+                    services.AddSingleton<ICredentialStore>(sp => sp.GetRequiredService<SqlCipherCredentialStore>());
+                    services.AddSingleton<IConnectionRepository, LiteConnect.Core.Data.SqliteConnectionRepository>();
+                    services.AddSingleton<LiteConnect.Core.Data.DatabaseInitializer>();
+
+                    // ── App services ─────────────────────────────────────────────
+                    services.AddSingleton<AutoLockService>();
+
+                    // ── ViewModels ───────────────────────────────────────────────
+                    services.AddSingleton<ConnectionTreeViewModel>();
+                    services.AddSingleton<MainViewModel>();
+
+                    // ── Views ────────────────────────────────────────────────────
+                    services.AddSingleton<MainWindow>();
+
+                    // ── Protocol sessions ────────────────────────────────────────
+                    services.AddTransient<LiteConnect.Protocols.Rdp.RdpSession>();
+                })
+                .Build();
+
+            await _host.StartAsync();
+
+            // ── Initialize Credential Vault (Sprint 4.1, 4.2, 4.3) ───────────────
+            var credentialStore = _host.Services.GetRequiredService<SqlCipherCredentialStore>();
+            bool unlocked = await credentialStore.InitializeAsync();
+
+            if (!unlocked)
+            {
+                if (credentialStore.DpapiPortabilityMismatch)
+                {
+                    // Sprint 4.2: Portable vault moved to a different Windows user/PC
+                    var portabilityDlg = new DpapiPortabilityDialog(credentialStore);
+                    if (portabilityDlg.ShowDialog() != true || !credentialStore.IsUnlocked)
+                    {
+                        Shutdown();
+                        return;
+                    }
+                }
+                else
+                {
+                    // Sprint 4.3: Master Password mode — prompt user to unlock
+                    var masterPwdDlg = new MasterPasswordDialog(credentialStore);
+                    if (masterPwdDlg.ShowDialog() != true || !credentialStore.IsUnlocked)
+                    {
+                        Shutdown();
+                        return;
+                    }
                 }
             }
-            else
-            {
-                // Sprint 4.3: Master Password mode — prompt user to unlock
-                var masterPwdDlg = new MasterPasswordDialog(credentialStore);
-                if (masterPwdDlg.ShowDialog() != true || !credentialStore.IsUnlocked)
-                {
-                    Shutdown();
-                    return;
-                }
-            }
+
+            // Start Auto-Lock monitor (active in Master Password mode)
+            var autoLock = _host.Services.GetRequiredService<AutoLockService>();
+            autoLock.Start();
+
+            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+            MainWindow     = mainWindow;
+            ShutdownMode   = ShutdownMode.OnMainWindowClose;
+            mainWindow.Show();
         }
-
-        // Start Auto-Lock monitor (active in Master Password mode)
-        var autoLock = _host.Services.GetRequiredService<AutoLockService>();
-        autoLock.Start();
-
-        var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-        MainWindow     = mainWindow;
-        ShutdownMode   = ShutdownMode.OnMainWindowClose;
-        mainWindow.Show();
+        catch (Exception ex)
+        {
+            var errPath = System.IO.Path.Combine(AppContext.BaseDirectory, "startup_error.log");
+            System.IO.File.WriteAllText(errPath, ex.ToString());
+            System.Windows.MessageBox.Show(
+                $"LiteConnect failed to start:\n\n{ex.Message}",
+                "Startup Error",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+            Shutdown(1);
+        }
     }
 
     protected override async void OnExit(ExitEventArgs e)

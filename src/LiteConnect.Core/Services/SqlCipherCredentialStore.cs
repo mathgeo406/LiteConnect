@@ -531,7 +531,16 @@ public sealed class SqlCipherCredentialStore : ICredentialStore
     private async Task EnsureDatabaseInitializedAndSyncedAsync(CancellationToken ct)
     {
         var initializer = new DatabaseInitializer(_environment);
-        await initializer.InitializeAsync(GetSqlCipherKeyHex(), ct);
+        try
+        {
+            await initializer.InitializeAsync(GetSqlCipherKeyHex(), ct);
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 26 && _rawKey is not null)
+        {
+            // Database file on disk was created unencrypted (pre-Sprint 4) or with an incompatible key:
+            // back it up and initialize a fresh encrypted database.
+            await RecoverDatabaseWithNewKeyAsync(_rawKey, clearCredentials: false, ct);
+        }
         await SyncAppSettingsTableAsync(ct);
     }
 
