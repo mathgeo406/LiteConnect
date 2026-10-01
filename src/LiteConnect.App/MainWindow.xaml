@@ -5,6 +5,7 @@
         xmlns:views="clr-namespace:LiteConnect.App.Views"
         xmlns:conv="clr-namespace:LiteConnect.App.Converters"
         Title="LiteConnect"
+        Icon="pack://application:,,,/Assets/app.ico"
         Height="720" Width="1280"
         MinHeight="480" MinWidth="800"
         WindowStartupLocation="CenterScreen"
@@ -445,6 +446,11 @@
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                             Visibility="{Binding ActiveTab, Converter={StaticResource BoolToVisibility},
                                                  ConverterParameter=inverse}">
+                    <Image Source="pack://application:,,,/Assets/app.png"
+                           Width="80" Height="80"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,16"/>
                     <TextBlock Text="LiteConnect"
                                Foreground="{DynamicResource Shell.Foreground}"
                                FontSize="32"

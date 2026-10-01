@@ -9,12 +9,18 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>LiteConnect.App</RootNamespace>
     <AssemblyName>LiteConnect</AssemblyName>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <!-- Publish settings (RID supplied at publish time, not here) -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\app.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\LiteConnect.Core\LiteConnect.Core.csproj" />
