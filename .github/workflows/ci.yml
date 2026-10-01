@@ -1,0 +1,32 @@
+name: CI (Build & Test)
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore LiteConnect.sln
+
+      - name: Build solution
+        run: dotnet build LiteConnect.sln -c Release --no-restore
+
+      - name: Run unit tests
+        run: dotnet test tests/LiteConnect.Core.Tests/LiteConnect.Core.Tests.csproj -c Release --no-build --verbosity normal

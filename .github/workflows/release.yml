@@ -1,0 +1,134 @@
+name: Release (Version & Publish on Merge to main)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type (patch, minor, major)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository (with full history and tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Determine next semantic version
+        id: semver
+        shell: pwsh
+        run: |
+          git fetch --tags --force
+          $latestTag = git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | Select-Object -First 1
+
+          if (-not $latestTag) {
+              $major = 0; $minor = 1; $patch = 0
+              $nextVersion = "0.1.0"
+          } else {
+              $verStr = $latestTag.TrimStart('v')
+              $parts = $verStr.Split('.')
+              $major = [int]$parts[0]
+              $minor = [int]$parts[1]
+              $patch = [int]$parts[2]
+
+              $commitMsg = git log -1 --pretty=%B
+              $manualBump = "${{ inputs.bump }}"
+
+              if ($manualBump -eq "major" -or $commitMsg -match "(?i)(BREAKING CHANGE|#major)") {
+                  $major += 1; $minor = 0; $patch = 0
+              } elseif ($manualBump -eq "minor" -or $commitMsg -match "(?i)(^feat(\(.+\))?:|#minor)") {
+                  $minor += 1; $patch = 0
+              } else {
+                  $patch += 1
+              }
+              $nextVersion = "$major.$minor.$patch"
+          }
+
+          $tag = "v$nextVersion"
+          Write-Host "Computed release version: $tag"
+          "version=$nextVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "tag=$tag"             | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Run unit tests
+        run: dotnet test tests/LiteConnect.Core.Tests/LiteConnect.Core.Tests.csproj -c Release --verbosity normal
+
+      - name: Publish portable win-x64 build
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.semver.outputs.version }}"
+          $outDir = "publish/win-x64"
+          dotnet publish src/LiteConnect.App/LiteConnect.App.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:Version=$ver `
+            -p:FileVersion=$ver.0 `
+            -p:AssemblyVersion=$ver.0 `
+            -o $outDir
+
+          New-Item -ItemType File -Force -Path "$outDir/portable.marker" | Out-Null
+          Copy-Item "README.md" "$outDir/README.md" -Force
+
+          New-Item -ItemType Directory -Force -Path "artifacts" | Out-Null
+          Copy-Item "$outDir/LiteConnect.exe" "artifacts/LiteConnect-v$ver-win-x64.exe"
+          Compress-Archive -Path "$outDir/LiteConnect.exe", "$outDir/portable.marker", "$outDir/README.md" `
+            -DestinationPath "artifacts/LiteConnect-v$ver-win-x64-portable.zip" -Force
+
+      - name: Publish portable win-arm64 build
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.semver.outputs.version }}"
+          $outDir = "publish/win-arm64"
+          dotnet publish src/LiteConnect.App/LiteConnect.App.csproj `
+            -c Release `
+            -r win-arm64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:Version=$ver `
+            -p:FileVersion=$ver.0 `
+            -p:AssemblyVersion=$ver.0 `
+            -o $outDir
+
+          New-Item -ItemType File -Force -Path "$outDir/portable.marker" | Out-Null
+          Copy-Item "README.md" "$outDir/README.md" -Force
+
+          Copy-Item "$outDir/LiteConnect.exe" "artifacts/LiteConnect-v$ver-win-arm64.exe"
+          Compress-Archive -Path "$outDir/LiteConnect.exe", "$outDir/portable.marker", "$outDir/README.md" `
+            -DestinationPath "artifacts/LiteConnect-v$ver-win-arm64-portable.zip" -Force
+
+      - name: Create GitHub Release and upload binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.semver.outputs.tag }}
+          name: LiteConnect ${{ steps.semver.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            artifacts/LiteConnect-v${{ steps.semver.outputs.version }}-win-x64-portable.zip
+            artifacts/LiteConnect-v${{ steps.semver.outputs.version }}-win-x64.exe
+            artifacts/LiteConnect-v${{ steps.semver.outputs.version }}-win-arm64-portable.zip
+            artifacts/LiteConnect-v${{ steps.semver.outputs.version }}-win-arm64.exe
