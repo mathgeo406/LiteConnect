@@ -1,13 +1,7 @@
 name: CI (Build & Test)
 
 on:
-  push:
-    branches:
-      - dev
-  pull_request:
-    branches:
-      - main
-      - dev
+  workflow_dispatch:
 
 jobs:
   build-and-test:

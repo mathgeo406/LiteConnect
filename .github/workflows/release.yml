@@ -1,9 +1,6 @@
-name: Release (Version & Publish on Merge to main)
+name: Release (Version & Publish)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       bump:
