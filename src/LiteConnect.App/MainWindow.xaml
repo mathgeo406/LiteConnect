@@ -154,8 +154,11 @@
               BorderBrush="{DynamicResource Shell.Border}"
               BorderThickness="0,0,0,1">
             <MenuItem Header="_File" Foreground="{DynamicResource Shell.Foreground}">
-                <MenuItem Header="New _Connection…"   InputGestureText="Ctrl+N"/>
-                <MenuItem Header="New _Folder…"/>
+                <MenuItem Header="New _Connection…"
+                          InputGestureText="Ctrl+N"
+                          Command="{Binding TreeViewModel.NewConnectionCommand}"/>
+                <MenuItem Header="New _Folder…"
+                          Command="{Binding TreeViewModel.NewGroupCommand}"/>
                 <Separator/>
                 <MenuItem Header="_Import Connections…"/>
                 <MenuItem Header="_Export Connections…"/>
@@ -170,7 +173,11 @@
                 <MenuItem Header="_Status Bar"        IsCheckable="True" IsChecked="True"/>
             </MenuItem>
             <MenuItem Header="_Tools" Foreground="{DynamicResource Shell.Foreground}">
-                <MenuItem Header="_Settings…"         InputGestureText="Ctrl+,"/>
+                <MenuItem Header="_Security &amp; Encryption…"
+                          Command="{Binding OpenSecuritySettingsCommand}"/>
+                <MenuItem Header="_Settings…"
+                          InputGestureText="Ctrl+,"
+                          Command="{Binding OpenSecuritySettingsCommand}"/>
             </MenuItem>
             <MenuItem Header="_Help" Foreground="{DynamicResource Shell.Foreground}">
                 <MenuItem Header="_About LiteConnect…"/>

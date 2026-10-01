@@ -234,9 +234,33 @@
                             <TextBox     x:Name="TxtUsername"
                                          Grid.Column="0" Grid.Row="1"
                                          Style="{StaticResource FieldInput}"/>
-                            <PasswordBox x:Name="PwdPassword"
-                                         Grid.Column="2" Grid.Row="1"
-                                         Style="{StaticResource FieldPassword}"/>
+                            <Grid Grid.Column="2" Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="4"/>
+                                    <ColumnDefinition Width="32"/>
+                                </Grid.ColumnDefinitions>
+                                <PasswordBox x:Name="PwdPassword"
+                                             Grid.Column="0"
+                                             Style="{StaticResource FieldPassword}"
+                                             PasswordChanged="PwdPassword_PasswordChanged"/>
+                                <TextBox     x:Name="TxtPasswordRevealed"
+                                             Grid.Column="0"
+                                             Visibility="Collapsed"
+                                             Style="{StaticResource FieldInput}"
+                                             TextChanged="TxtPasswordRevealed_TextChanged"/>
+                                <ToggleButton x:Name="BtnRevealPassword"
+                                              Grid.Column="2"
+                                              Content="👁"
+                                              ToolTip="Show / hide password"
+                                              Background="{DynamicResource Dlg.Input.Bg}"
+                                              Foreground="{DynamicResource Dlg.Foreground}"
+                                              BorderBrush="{DynamicResource Dlg.Input.Border}"
+                                              BorderThickness="1"
+                                              Cursor="Hand"
+                                              Checked="BtnRevealPassword_CheckedChanged"
+                                              Unchecked="BtnRevealPassword_CheckedChanged"/>
+                            </Grid>
                         </Grid>
 
                         <!-- RDP-only: Domain -->

@@ -1,6 +1,7 @@
 using LiteConnect.Core.Abstractions;
 using LiteConnect.Core.Models;
 using LiteConnect.Core.Serialization;
+using LiteConnect.Core.Services;
 using Microsoft.Data.Sqlite;
 
 namespace LiteConnect.Core.Data;
@@ -8,36 +9,67 @@ namespace LiteConnect.Core.Data;
 /// <summary>
 /// SQLite-backed implementation of <see cref="IConnectionRepository"/>.
 /// Uses a lazily-opened, long-lived <see cref="SqliteConnection"/> for the
-/// lifetime of this instance. Dispose to release the file handle.
+/// lifetime of this instance. Automatically applies the active SQLCipher key
+/// and closes the connection when the credential store is locked or re-keyed.
 /// </summary>
-public sealed class SqliteConnectionRepository(IAppEnvironment environment)
+public sealed class SqliteConnectionRepository
     : IConnectionRepository, IAsyncDisposable, IDisposable
 {
+    private readonly IAppEnvironment _environment;
+    private readonly ICredentialStore? _credentialStore;
     private SqliteConnection? _connection;
     private bool _disposed;
+
+    public SqliteConnectionRepository(
+        IAppEnvironment environment,
+        ICredentialStore? credentialStore = null)
+    {
+        _environment     = environment ?? throw new ArgumentNullException(nameof(environment));
+        _credentialStore = credentialStore;
+
+        if (_credentialStore is SqlCipherCredentialStore sqlCipherStore)
+        {
+            sqlCipherStore.Locked      += OnStoreLockedOrRekeying;
+            sqlCipherStore.BeforeRekey += OnStoreLockedOrRekeying;
+        }
+    }
+
+    private void OnStoreLockedOrRekeying(object? sender, EventArgs e)
+    {
+        CloseConnection();
+    }
+
+    /// <summary>
+    /// Closes the underlying SQLCipher connection immediately (e.g. on lock or before rekey).
+    /// </summary>
+    public void CloseConnection()
+    {
+        if (_connection is not null)
+        {
+            try { _connection.Close(); } catch { }
+            _connection.Dispose();
+            _connection = null;
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Connection management
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Lazily opens the underlying SQLite connection the first time it is needed.
+    /// Lazily opens the underlying SQLite/SQLCipher connection the first time it is needed.
     /// </summary>
     private async Task<SqliteConnection> EnsureOpenAsync(CancellationToken ct = default)
     {
         if (_connection is { State: System.Data.ConnectionState.Open })
             return _connection;
 
-        SQLitePCL.Batteries_V2.Init();
+        string? keyHex = (_credentialStore as SqlCipherCredentialStore)?.GetSqlCipherKeyHex();
+        _connection = await SqlCipherConnectionHelper.OpenEncryptedConnectionAsync(
+            _environment.DatabasePath,
+            keyHex,
+            ct);
 
-        var cs = new SqliteConnectionStringBuilder
-        {
-            DataSource = environment.DatabasePath,
-            Mode = SqliteOpenMode.ReadWriteCreate,
-        }.ToString();
-
-        _connection = new SqliteConnection(cs);
-        await _connection.OpenAsync(ct);
         return _connection;
     }
 

@@ -13,6 +13,7 @@ namespace LiteConnect.Core.Serialization;
 [JsonSerializable(typeof(RdpConnectionSettings))]
 [JsonSerializable(typeof(VncConnectionSettings))]
 [JsonSerializable(typeof(ProxySettings))]
+[JsonSerializable(typeof(SecurityMetadata))]
 [JsonSourceGenerationOptions(
     WriteIndented = false,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
@@ -51,6 +52,8 @@ public static class ConnectionSettingsSerializer
                 => JsonSerializer.Serialize((VncConnectionSettings)(object)obj, s_context.VncConnectionSettings),
             Type t when t == typeof(ProxySettings)
                 => JsonSerializer.Serialize((ProxySettings)(object)obj, s_context.ProxySettings),
+            Type t when t == typeof(SecurityMetadata)
+                => JsonSerializer.Serialize((SecurityMetadata)(object)obj, s_context.SecurityMetadata),
             _ => JsonSerializer.Serialize(obj, s_context.Options),
         };
     }
@@ -73,6 +76,8 @@ public static class ConnectionSettingsSerializer
                 => (T?)(object?)JsonSerializer.Deserialize(json, s_context.VncConnectionSettings),
             Type t when t == typeof(ProxySettings)
                 => (T?)(object?)JsonSerializer.Deserialize(json, s_context.ProxySettings),
+            Type t when t == typeof(SecurityMetadata)
+                => (T?)(object?)JsonSerializer.Deserialize(json, s_context.SecurityMetadata),
             _ => JsonSerializer.Deserialize<T>(json, s_context.Options),
         };
     }

@@ -27,28 +27,10 @@ public sealed class DatabaseInitializer(IAppEnvironment environment)
     /// <param name="ct">Cancellation token.</param>
     public async Task InitializeAsync(string? sqlCipherKey = null, CancellationToken ct = default)
     {
-        // SQLitePCLRaw must be initialised before any SqliteConnection is created.
-        SQLitePCL.Batteries_V2.Init();
-
-        var connectionString = new SqliteConnectionStringBuilder
-        {
-            DataSource = environment.DatabasePath,
-            Mode = SqliteOpenMode.ReadWriteCreate,
-        }.ToString();
-
-        await using var connection = new SqliteConnection(connectionString);
-        await connection.OpenAsync(ct);
-
-        // The PRAGMA key must be the very first statement after opening.
-        if (!string.IsNullOrEmpty(sqlCipherKey))
-        {
-            await using var keyCmd = connection.CreateCommand();
-            // Use parameterised form to avoid injection if the key ever comes
-            // from untrusted input in later sprints.
-            keyCmd.CommandText = "PRAGMA key = @k";
-            keyCmd.Parameters.AddWithValue("@k", sqlCipherKey);
-            await keyCmd.ExecuteNonQueryAsync(ct);
-        }
+        await using var connection = await SqlCipherConnectionHelper.OpenEncryptedConnectionAsync(
+            environment.DatabasePath,
+            sqlCipherKey,
+            ct);
 
         await CreateSchemaAsync(connection, ct);
         await SeedGlobalDefaultsAsync(connection, ct);

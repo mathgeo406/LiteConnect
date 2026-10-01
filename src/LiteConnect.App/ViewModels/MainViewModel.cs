@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LiteConnect.App.Views;
 using LiteConnect.Core.Abstractions;
 using LiteConnect.Core.Models;
+using LiteConnect.Core.Services;
 using LiteConnect.Protocols.Rdp;
 
 namespace LiteConnect.App.ViewModels;
@@ -14,16 +16,21 @@ namespace LiteConnect.App.ViewModels;
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly IConnectionRepository _repository;
+    private readonly ICredentialStore _credentialStore;
 
     // ── Sub-ViewModels ──────────────────────────────────────────────────────────
 
     /// <summary>Connection tree panel ViewModel.</summary>
     public ConnectionTreeViewModel TreeViewModel { get; }
 
-    public MainViewModel(ConnectionTreeViewModel treeViewModel, IConnectionRepository repository)
+    public MainViewModel(
+        ConnectionTreeViewModel treeViewModel,
+        IConnectionRepository repository,
+        ICredentialStore credentialStore)
     {
-        TreeViewModel = treeViewModel;
-        _repository   = repository;
+        TreeViewModel    = treeViewModel;
+        _repository      = repository;
+        _credentialStore = credentialStore;
 
         TreeViewModel.ConnectionOpenRequested += (_, conn) => _ = OpenSessionAsync(conn);
     }
@@ -115,24 +122,42 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool CanQuickConnect() => !string.IsNullOrWhiteSpace(QuickConnectHost);
 
-    // ── Session factory / tab launcher ──────────────────────────────────────────
+    [RelayCommand]
+    private void OpenSecuritySettings()
+    {
+        if (_credentialStore is not SqlCipherCredentialStore sqlCipherStore)
+            return;
+
+        var dlg = new SecuritySettingsDialog(sqlCipherStore);
+        if (System.Windows.Application.Current?.MainWindow is { } owner)
+            dlg.Owner = owner;
+
+        dlg.ShowDialog();
+    }
+
+    // ── Session factory / tab launcher (Sprint 3.5 & 4.7) ───────────────────────
 
     /// <summary>
-    /// Creates and opens a protocol session tab for <paramref name="connection"/>.
+    /// Resolves effective credentials (Connection → Group → Global) and opens a protocol session tab.
     /// </summary>
     public async Task OpenSessionAsync(ConnectionInfo connection)
     {
-        if (connection.Protocol == ProtocolType.RDP)
+        var effectiveConnection = await CredentialResolver.ResolveEffectiveAsync(
+            connection,
+            _repository,
+            _credentialStore);
+
+        if (effectiveConnection.Protocol == ProtocolType.RDP)
         {
             var rdpSession = new RdpSession();
-            var rdpVm      = new RdpSessionViewModel(rdpSession, connection, CloseTabCommand, _repository);
+            var rdpVm      = new RdpSessionViewModel(rdpSession, effectiveConnection, CloseTabCommand, _repository);
             AddTab(rdpVm);
             await rdpVm.ConnectAsync();
         }
         else
         {
             // SSH (Sprint 5) and VNC (Sprint 8) use PlaceholderTabViewModel for now
-            var placeholder = new PlaceholderTabViewModel(connection, CloseTabCommand);
+            var placeholder = new PlaceholderTabViewModel(effectiveConnection, CloseTabCommand);
             AddTab(placeholder);
         }
     }

@@ -1,9 +1,11 @@
+using System.Windows;
+using LiteConnect.App.Services;
 using LiteConnect.App.ViewModels;
+using LiteConnect.App.Views;
 using LiteConnect.Core.Abstractions;
 using LiteConnect.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Windows;
 
 // Explicitly alias to avoid ambiguity with System.Windows.Forms.Application
 using WpfApplication = System.Windows.Application;
@@ -11,7 +13,8 @@ using WpfApplication = System.Windows.Application;
 namespace LiteConnect.App;
 
 /// <summary>
-/// Application entry point. Configures the DI container (composition root)
+/// Application entry point. Configures the DI container (composition root),
+/// initializes the SQLCipher credential vault (DPAPI or Master Password),
 /// and launches the main window.
 /// </summary>
 public partial class App : WpfApplication
@@ -22,13 +25,21 @@ public partial class App : WpfApplication
     {
         base.OnStartup(e);
 
+        // Prevent WPF from shutting down when a startup modal dialog (e.g. MasterPasswordDialog) closes
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((_, services) =>
             {
                 // ── Core services ────────────────────────────────────────────
                 services.AddSingleton<IAppEnvironment, PortableAppEnvironment>();
+                services.AddSingleton<SqlCipherCredentialStore>();
+                services.AddSingleton<ICredentialStore>(sp => sp.GetRequiredService<SqlCipherCredentialStore>());
                 services.AddSingleton<IConnectionRepository, LiteConnect.Core.Data.SqliteConnectionRepository>();
                 services.AddSingleton<LiteConnect.Core.Data.DatabaseInitializer>();
+
+                // ── App services ─────────────────────────────────────────────
+                services.AddSingleton<AutoLockService>();
 
                 // ── ViewModels ───────────────────────────────────────────────
                 services.AddSingleton<ConnectionTreeViewModel>();
@@ -39,21 +50,46 @@ public partial class App : WpfApplication
 
                 // ── Protocol sessions ────────────────────────────────────────
                 services.AddTransient<LiteConnect.Protocols.Rdp.RdpSession>();
-
-                // ── Future services (wired as sprints complete) ──────────────
-                // Sprint 4:  ICredentialStore
-                // Sprint 5+: SshSession, ISessionRecorderFactory
-                // Sprint 7:  IExportService, IImportService
             })
             .Build();
 
         await _host.StartAsync();
 
-        // Initialize the database schema (creates tables if first run)
-        var dbInit = _host.Services.GetRequiredService<LiteConnect.Core.Data.DatabaseInitializer>();
-        await dbInit.InitializeAsync();
+        // ── Initialize Credential Vault (Sprint 4.1, 4.2, 4.3) ───────────────
+        var credentialStore = _host.Services.GetRequiredService<SqlCipherCredentialStore>();
+        bool unlocked = await credentialStore.InitializeAsync();
+
+        if (!unlocked)
+        {
+            if (credentialStore.DpapiPortabilityMismatch)
+            {
+                // Sprint 4.2: Portable vault moved to a different Windows user/PC
+                var portabilityDlg = new DpapiPortabilityDialog(credentialStore);
+                if (portabilityDlg.ShowDialog() != true || !credentialStore.IsUnlocked)
+                {
+                    Shutdown();
+                    return;
+                }
+            }
+            else
+            {
+                // Sprint 4.3: Master Password mode — prompt user to unlock
+                var masterPwdDlg = new MasterPasswordDialog(credentialStore);
+                if (masterPwdDlg.ShowDialog() != true || !credentialStore.IsUnlocked)
+                {
+                    Shutdown();
+                    return;
+                }
+            }
+        }
+
+        // Start Auto-Lock monitor (active in Master Password mode)
+        var autoLock = _host.Services.GetRequiredService<AutoLockService>();
+        autoLock.Start();
 
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+        MainWindow     = mainWindow;
+        ShutdownMode   = ShutdownMode.OnMainWindowClose;
         mainWindow.Show();
     }
 

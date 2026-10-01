@@ -83,6 +83,7 @@ public partial class ConnectionPropertiesDialog : Window
         TxtPort.Text              = _model.Port?.ToString() ?? string.Empty;
         TxtUsername.Text          = _model.Username ?? string.Empty;
         PwdPassword.Password      = _model.Password ?? string.Empty;
+        TxtPasswordRevealed.Text  = _model.Password ?? string.Empty;
         TxtDomain.Text            = _model.Domain ?? string.Empty;
         TxtKeyPath.Text           = _model.PrivateKeyPath ?? string.Empty;
         PwdKeyPassphrase.Password = _model.KeyPassphrase ?? string.Empty;
@@ -190,12 +191,16 @@ public partial class ConnectionPropertiesDialog : Window
             return false;
         }
 
+        string rawPassword = BtnRevealPassword.IsChecked == true
+            ? TxtPasswordRevealed.Text
+            : PwdPassword.Password;
+
         _model.Name           = TxtName.Text.Trim();
         _model.Protocol       = (ProtocolType)CboProtocol.SelectedItem!;
         _model.Hostname       = TxtHostname.Text.Trim();
         _model.Port           = int.TryParse(TxtPort.Text, out var p) ? p : null;
         _model.Username       = NullIfEmpty(TxtUsername.Text);
-        _model.Password       = NullIfEmpty(PwdPassword.Password);
+        _model.Password       = NullIfEmpty(rawPassword);
         _model.Domain         = NullIfEmpty(TxtDomain.Text);
         _model.PrivateKeyPath = NullIfEmpty(TxtKeyPath.Text);
         _model.KeyPassphrase  = NullIfEmpty(PwdKeyPassphrase.Password);
@@ -368,6 +373,41 @@ public partial class ConnectionPropertiesDialog : Window
         };
         if (dlg.ShowDialog() == true)
             TxtKeyPath.Text = dlg.FileName;
+    }
+
+    private bool _syncingPassword;
+
+    private void PwdPassword_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (_syncingPassword) return;
+        _syncingPassword         = true;
+        TxtPasswordRevealed.Text = PwdPassword.Password;
+        _syncingPassword         = false;
+    }
+
+    private void TxtPasswordRevealed_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (_syncingPassword) return;
+        _syncingPassword   = true;
+        PwdPassword.Password = TxtPasswordRevealed.Text;
+        _syncingPassword   = false;
+    }
+
+    private void BtnRevealPassword_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        bool revealed = BtnRevealPassword.IsChecked == true;
+        if (revealed)
+        {
+            TxtPasswordRevealed.Text       = PwdPassword.Password;
+            TxtPasswordRevealed.Visibility = Visibility.Visible;
+            PwdPassword.Visibility         = Visibility.Collapsed;
+        }
+        else
+        {
+            PwdPassword.Password           = TxtPasswordRevealed.Text;
+            PwdPassword.Visibility         = Visibility.Visible;
+            TxtPasswordRevealed.Visibility = Visibility.Collapsed;
+        }
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────

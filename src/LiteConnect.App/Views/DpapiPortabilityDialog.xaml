@@ -1,0 +1,109 @@
+<Window x:Class="LiteConnect.App.Views.DpapiPortabilityDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Credential Portability Notice"
+        Width="520" Height="400"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#1E1E1E">
+
+    <Grid Margin="24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="⚠️  Credentials Encrypted by Another Windows User"
+                   Foreground="#D4D4D4"
+                   FontSize="16"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="This portable LiteConnect vault was encrypted using Windows DPAPI on a different PC or user account. Your folders and connections are intact, but saved passwords cannot be decrypted by this Windows user. Choose how to proceed:"
+                   Foreground="#9E9E9E"
+                   FontSize="12"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,16"/>
+
+        <RadioButton Grid.Row="2"
+                     x:Name="RbResetDpapi"
+                     IsChecked="True"
+                     Foreground="#D4D4D4"
+                     FontSize="13"
+                     Margin="0,0,0,10"
+                     Checked="Option_CheckedChanged"
+                     Content="Re-enter passwords manually (keep all connections, re-bind DPAPI to this user)"/>
+
+        <StackPanel Grid.Row="3">
+            <RadioButton x:Name="RbMasterPassword"
+                         Foreground="#D4D4D4"
+                         FontSize="13"
+                         Margin="0,0,0,10"
+                         Checked="Option_CheckedChanged"
+                         Content="Switch to Master Password mode (portable across all PCs)"/>
+
+            <StackPanel x:Name="PanelNewMaster"
+                        Margin="24,0,0,0"
+                        Visibility="Collapsed">
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Column="0" Grid.Row="0" Text="New Master Password" Foreground="#858585" FontSize="11" Margin="0,0,0,3"/>
+                    <TextBlock Grid.Column="2" Grid.Row="0" Text="Confirm Password" Foreground="#858585" FontSize="11" Margin="0,0,0,3"/>
+
+                    <PasswordBox x:Name="PwdNew" Grid.Column="0" Grid.Row="1"
+                                 Background="#3C3C3C" Foreground="#D4D4D4" BorderBrush="#555555" Padding="6,5"/>
+                    <PasswordBox x:Name="PwdConfirm" Grid.Column="2" Grid.Row="1"
+                                 Background="#3C3C3C" Foreground="#D4D4D4" BorderBrush="#555555" Padding="6,5"/>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+
+        <TextBlock Grid.Row="4"
+                   x:Name="TxtError"
+                   Foreground="#FF6B6B"
+                   FontSize="12"
+                   Margin="0,8,0,0"
+                   Visibility="Collapsed"/>
+
+        <StackPanel Grid.Row="5"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button x:Name="BtnContinue"
+                    Content="Continue"
+                    Width="100" Height="30"
+                    Margin="0,0,8,0"
+                    Background="#007ACC"
+                    Foreground="White"
+                    BorderBrush="Transparent"
+                    FontSize="13"
+                    IsDefault="True"
+                    Cursor="Hand"
+                    Click="BtnContinue_Click"/>
+            <Button Content="Exit"
+                    Width="80" Height="30"
+                    Background="#3C3C3C"
+                    Foreground="#D4D4D4"
+                    BorderBrush="#555555"
+                    BorderThickness="1"
+                    FontSize="13"
+                    IsCancel="True"
+                    Cursor="Hand"
+                    Click="BtnExit_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
