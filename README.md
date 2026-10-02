@@ -49,6 +49,19 @@ LiteConnect automatically detects whether a `portable.marker` file exists next t
 
 ---
 
+## Keyboard Shortcuts (SSH Terminal & App)
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+C` (or `Ctrl+C` with selection) | Copy selected terminal text to clipboard |
+| `Ctrl+Shift+V` (or `Right-Click`) | Paste clipboard text into terminal (supports bracketed paste) |
+| `Shift+PageUp` / `Shift+PageDown` | Scroll up / down through terminal scrollback buffer |
+| `Ctrl+Shift+R` | Start or stop SSH session recording |
+| `Ctrl+N` | Create a new connection |
+| `Ctrl+,` | Open Security & Encryption settings |
+
+---
+
 ## Building & Running Tests
 
 ### Prerequisites
@@ -62,8 +75,13 @@ dotnet build LiteConnect.sln
 
 ### Run the unit test suite
 ```powershell
-dotnet test tests/LiteConnect.Core.Tests
+dotnet test LiteConnect.sln
 ```
+
+### GitHub Actions Workflows
+Both GitHub Actions workflows in `.github/workflows/` are configured for **manual trigger (`workflow_dispatch`)** to conserve Actions minutes:
+- **CI (`ci.yml`)**: Runs `dotnet build` and `dotnet test` on `windows-latest`.
+- **Release (`release.yml`)**: Computes the next semantic version tag (`patch` / `minor` / `major`), publishes self-contained `win-x64` and `win-arm64` portable `.zip` bundles, and creates a GitHub Release.
 
 ---
 
@@ -73,11 +91,12 @@ dotnet test tests/LiteConnect.Core.Tests
 LiteConnect/
 ├── src/
 │   ├── LiteConnect.App/          # WPF application shell, Views, ViewModels, DI host
-│   ├── LiteConnect.Core/         # Domain models, abstractions, SQLCipher/SQLite data layer
-│   ├── LiteConnect.Protocols/    # Protocol implementations (RDP ActiveX interop, SSH.NET)
-│   └── LiteConnect.Terminal/     # Custom VT100/xterm WPF terminal control
+│   ├── LiteConnect.Core/         # Domain models, abstractions, SQLCipher data layer, session recording
+│   ├── LiteConnect.Protocols/    # Protocol implementations (RDP ActiveX interop, SSH.NET client & tunnels)
+│   └── LiteConnect.Terminal/     # Custom VT100/xterm hardware-accelerated WPF terminal control
 ├── tests/
-│   └── LiteConnect.Core.Tests/   # xUnit + FluentAssertions unit & integration tests
+│   └── LiteConnect.Core.Tests/   # xUnit + FluentAssertions unit & integration tests (29 passing tests)
+├── .github/workflows/            # Manual CI & Release GitHub Actions workflows
 ├── build.ps1                     # Single-file portable release publisher (win-x64 & win-arm64)
 ├── portable.marker               # Enables portable mode when placed next to LiteConnect.exe
 └── LiteConnect.sln
@@ -87,11 +106,11 @@ LiteConnect/
 
 ## Current Feature Status
 
-- ✅ **Sprint 1 — Shell & Foundation**: Dark VS Code-inspired WPF UI, Quick Connect bar, tab strip, portable environment detection.
-- ✅ **Sprint 2 — Connection Tree & Persistence**: SQLite/SQLCipher database initialization, folder/connection hierarchy CRUD, live search filter, Connection Properties dialog.
+- ✅ **Sprint 1 — Shell & Foundation**: Dark VS Code-inspired WPF UI, custom application icon, Quick Connect bar, tab strip, portable environment detection.
+- ✅ **Sprint 2 — Connection Tree & Persistence**: SQLite/SQLCipher database initialization, folder/connection hierarchy CRUD, drag-and-drop organization, live search filter, Connection Properties dialog.
 - ✅ **Sprint 3 — RDP Integration**: In-process RDP ActiveX (`AxMsRdpClient9NotSafeForScripting`) sessions in tabs, RD Gateway support, clipboard/drive/printer/audio/smart-card redirection, experience & performance flags, auto-reconnect, and full-screen mode.
-- ⏳ **Sprint 4 — Credential Storage**: Windows DPAPI & Master Password encryption via SQLCipher.
-- ⏳ **Sprint 5 — SSH & Terminal Emulator**: SSH.NET integration + custom VT100/xterm terminal rendering.
-- ⏳ **Sprint 6 — Session Recording**: Real-time SSH session logging (PlainText, Timestamped, HTML).
-- ⏳ **Sprint 7 — Import / Export**: mRemoteNG XML, CSV, and encrypted `.lcx` bundle support.
-- ⏳ **Sprint 8 — Polish & Packaging**: Global defaults/settings UI, keyboard shortcuts, and final release packaging.
+- ✅ **Sprint 4 — Credential Storage**: AES-256 SQLCipher database encryption with transparent Windows DPAPI default mode, portable DPAPI mismatch recovery dialog, opt-in PBKDF2 Master Password mode, live mode switching (`PRAGMA rekey`), idle/workstation-lock Auto-Lock, and hierarchical credential inheritance (Connection → Folder → Global).
+- ✅ **Sprint 5 — SSH & Terminal Emulator**: SSH.NET session integration (password, PEM/OpenSSH/PPK private key, keyboard-interactive auth), SHA-256 `KnownHosts` fingerprint verification dialog, HTTP/SOCKS4/SOCKS5 proxies, chained SSH Jump Host (`ProxyJump`), Local/Remote/Dynamic SOCKS port forwarding, and custom VT100/xterm `TerminalControl` (16/256/TrueColor, alternate screen buffer, scroll regions, mouse selection, copy/paste, 5 color themes, auto-resize `SIGWINCH`).
+- ✅ **Sprint 6 — SSH Session Recording**: Non-blocking `Channel`-buffered `FileSessionRecorder` tapping the raw SSH stream, supporting **Plain Text** (ANSI stripped), **Timestamped** (`[yyyy-MM-dd HH:mm:ss.fff]`), and **HTML** (SGR colors converted to CSS `<span>` tags) formats, per-connection auto-recording with template variables (`{connection}`, `{host}`, `{user}`, `{date}`, `{time}`), and manual Record/Pause/Resume/Stop UI controls (`Ctrl+Shift+R`).
+- ⏳ **Sprint 7 — Export / Import**: Encrypted `.lcx` bundles (AES-256-GCM), CSV import/export, and mRemoteNG `confCons.xml` import with conflict resolution.
+- ⏳ **Sprint 8 — Quick Connect, Polish & Package**: Recent connections history, tab management shortcuts (`Ctrl+W`, `Ctrl+Tab`, `Ctrl+1..9`), error-handling polish, and final multi-architecture portable packaging verification.
