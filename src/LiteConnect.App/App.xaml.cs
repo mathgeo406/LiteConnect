@@ -1,4 +1,6 @@
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using LiteConnect.App.Services;
 using LiteConnect.App.ViewModels;
 using LiteConnect.App.Views;
@@ -21,9 +23,59 @@ public partial class App : WpfApplication
 {
     private IHost? _host;
 
+    private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    private const int DWMWA_BORDER_COLOR            = 34;
+    private const int DWMWA_CAPTION_COLOR           = 35;
+    private const int DWMWA_TEXT_COLOR              = 36;
+
+    [DllImport("dwmapi.dll", PreserveSig = true)]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    /// <summary>
+    /// Applies a dark/blue DWM title bar matching the status bar (#007ACC) with crisp white text.
+    /// </summary>
+    public static void ApplyTitleBarTheme(Window window)
+    {
+        try
+        {
+            IntPtr hwnd = new WindowInteropHelper(window).Handle;
+            if (hwnd == IntPtr.Zero)
+                return;
+
+            int darkMode = 1;
+            _ = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref darkMode, sizeof(int));
+
+            // COLORREF format is 0x00BBGGRR: #007ACC (RGB: 0x00, 0x7A, 0xCC) -> 0x00CC7A00
+            int captionColor = 0x00CC7A00;
+            _ = DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, ref captionColor, sizeof(int));
+
+            // White title text: #FFFFFF -> 0x00FFFFFF
+            int textColor = 0x00FFFFFF;
+            _ = DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, ref textColor, sizeof(int));
+
+            // Matching border color: #007ACC -> 0x00CC7A00
+            int borderColor = 0x00CC7A00;
+            _ = DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref borderColor, sizeof(int));
+        }
+        catch
+        {
+            // Ignore on older OS versions that do not support DWM caption color attributes
+        }
+    }
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Apply matching title bar theme to all windows and dialogs automatically
+        EventManager.RegisterClassHandler(
+            typeof(Window),
+            FrameworkElement.LoadedEvent,
+            new RoutedEventHandler((sender, _) =>
+            {
+                if (sender is Window w)
+                    ApplyTitleBarTheme(w);
+            }));
 
         DispatcherUnhandledException += (_, args) =>
         {
@@ -45,6 +97,11 @@ public partial class App : WpfApplication
                     services.AddSingleton<ICredentialStore>(sp => sp.GetRequiredService<SqlCipherCredentialStore>());
                     services.AddSingleton<IConnectionRepository, LiteConnect.Core.Data.SqliteConnectionRepository>();
                     services.AddSingleton<IKnownHostsStore, LiteConnect.Core.Data.SqliteKnownHostsStore>();
+                    services.AddSingleton<ISessionRecorderFactory, LiteConnect.Core.Recording.SessionRecorderFactory>();
+                    services.AddTransient<ISessionRecorder, LiteConnect.Core.Recording.FileSessionRecorder>();
+                    services.AddSingleton<LiteConnect.Core.ImportExport.ConnectionExportImportService>();
+                    services.AddSingleton<IExportService>(sp => sp.GetRequiredService<LiteConnect.Core.ImportExport.ConnectionExportImportService>());
+                    services.AddSingleton<IImportService>(sp => sp.GetRequiredService<LiteConnect.Core.ImportExport.ConnectionExportImportService>());
                     services.AddSingleton<LiteConnect.Core.Data.DatabaseInitializer>();
 
                     // ── App services ─────────────────────────────────────────────
@@ -65,9 +122,41 @@ public partial class App : WpfApplication
 
             await _host.StartAsync();
 
-            // ── Initialize Credential Vault (Sprint 4.1, 4.2, 4.3) ───────────────
+            // ── Initialize Credential Vault (Sprint 4.1, 4.2, 4.3, 8.3) ──────────
             var credentialStore = _host.Services.GetRequiredService<SqlCipherCredentialStore>();
-            bool unlocked = await credentialStore.InitializeAsync();
+            var appEnvironment  = _host.Services.GetRequiredService<IAppEnvironment>();
+            bool unlocked;
+            try
+            {
+                unlocked = await credentialStore.InitializeAsync();
+            }
+            catch (Exception dbEx)
+            {
+                var choice = System.Windows.MessageBox.Show(
+                    $"The connection database appears to be corrupted or unreadable:\n\n{dbEx.Message}\n\n" +
+                    "Would you like to back up the damaged database and create a new one?",
+                    "Database Recovery",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Warning);
+
+                if (choice != System.Windows.MessageBoxResult.Yes)
+                {
+                    Shutdown(1);
+                    return;
+                }
+
+                if (System.IO.File.Exists(appEnvironment.DatabasePath))
+                {
+                    string backupPath = $"{appEnvironment.DatabasePath}.corrupt.{DateTime.Now:yyyyMMdd_HHmmss}";
+                    System.IO.File.Move(appEnvironment.DatabasePath, backupPath, overwrite: true);
+                }
+                if (System.IO.File.Exists(appEnvironment.DpapiKeyPath))
+                {
+                    System.IO.File.Delete(appEnvironment.DpapiKeyPath);
+                }
+
+                unlocked = await credentialStore.InitializeAsync();
+            }
 
             if (!unlocked)
             {

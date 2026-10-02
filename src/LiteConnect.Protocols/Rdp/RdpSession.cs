@@ -413,10 +413,16 @@ public sealed class RdpSession : IProtocolSession
             client.DesktopWidth  = rdp.DesktopWidth.Value;
             client.DesktopHeight = rdp.DesktopHeight.Value;
         }
-        else if (_host is { ActualWidth: > 0, ActualHeight: > 0 })
+        else if (_host is { ActualWidth: >= 200, ActualHeight: >= 200 })
         {
             client.DesktopWidth  = (int)_host.ActualWidth;
             client.DesktopHeight = (int)_host.ActualHeight;
+        }
+        else
+        {
+            var workArea = Screen.PrimaryScreen?.WorkingArea;
+            client.DesktopWidth  = workArea is { Width: > 0 } ? Math.Max(800, workArea.Value.Width - 260) : 1280;
+            client.DesktopHeight = workArea is { Height: > 0 } ? Math.Max(600, workArea.Value.Height - 120) : 720;
         }
 
         // 4. Smart sizing (3.1)

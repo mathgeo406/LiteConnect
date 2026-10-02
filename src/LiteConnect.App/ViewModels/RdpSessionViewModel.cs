@@ -60,6 +60,7 @@ public sealed partial class RdpSessionViewModel : ObservableObject, ISessionTabV
     public IRelayCommand? DisconnectCommand => DisconnectSessionCommand;
     public IRelayCommand? FullScreenCommand => EnterFullScreenCommand;
     public IRelayCommand? PropertiesCommand => OpenPropertiesCommand;
+    public IRelayCommand? ToggleRecordingCommand => null;
 
     // ── Constructor ─────────────────────────────────────────────────────────────
 
@@ -90,11 +91,14 @@ public sealed partial class RdpSessionViewModel : ObservableObject, ISessionTabV
     {
         try
         {
+            State         = SessionState.Connecting;
             StatusMessage = $"Connecting to {_connectionInfo.Hostname}:{_connectionInfo.EffectivePort}…";
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Loaded);
             await _session.ConnectAsync(_connectionInfo, ct);
         }
         catch (Exception ex)
         {
+            State         = SessionState.Error;
             StatusMessage = $"Connection failed: {ex.Message}";
         }
     }
@@ -104,11 +108,14 @@ public sealed partial class RdpSessionViewModel : ObservableObject, ISessionTabV
     {
         try
         {
+            State         = SessionState.Connecting;
             StatusMessage = $"Reconnecting to {_connectionInfo.Hostname}…";
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Loaded);
             await _session.ReconnectAsync();
         }
         catch (Exception ex)
         {
+            State         = SessionState.Error;
             StatusMessage = $"Reconnect failed: {ex.Message}";
         }
     }

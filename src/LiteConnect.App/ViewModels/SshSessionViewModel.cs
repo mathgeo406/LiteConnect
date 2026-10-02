@@ -1,23 +1,28 @@
+using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LiteConnect.App.Views;
 using LiteConnect.Core.Abstractions;
 using LiteConnect.Core.Models;
+using LiteConnect.Core.Recording;
 using LiteConnect.Protocols.Ssh;
 
 namespace LiteConnect.App.ViewModels;
 
 /// <summary>
-/// ViewModel for an active SSH terminal tab (Sprint 5).
-/// Wraps <see cref="SshSession"/>, binds to <see cref="SshTabView"/>, and handles
-/// host key verification prompts, copy/paste, clear terminal, reconnect, and disconnect.
+/// ViewModel for an active SSH terminal tab (Sprints 5 &amp; 6).
+/// Wraps <see cref="SshSession"/> and <see cref="ISessionRecorder"/>, binds to <see cref="SshTabView"/>,
+/// and handles host key verification prompts, session recording (manual + auto), copy/paste,
+/// clear terminal, reconnect, and disconnect.
 /// </summary>
 public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabViewModel
 {
     private readonly SshSession _session;
     private readonly ConnectionInfo _connectionInfo;
     private readonly IConnectionRepository? _repository;
+    private readonly IAppEnvironment? _appEnvironment;
+    private readonly ISessionRecorder _recorder;
     private bool _disposed;
 
     [ObservableProperty]
@@ -35,6 +40,29 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
     [ObservableProperty]
     private string _statusMessage = "Connecting…";
 
+    // ── Recording state (Sprint 6) ──────────────────────────────────────────────
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotRecording))]
+    [NotifyPropertyChangedFor(nameof(ToggleRecordingMenuText))]
+    private bool _isRecording;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PauseResumeButtonText))]
+    private bool _isRecordingPaused;
+
+    [ObservableProperty]
+    private string _recordingStatusText = string.Empty;
+
+    public bool IsNotRecording => !IsRecording;
+
+    public string PauseResumeButtonText => IsRecordingPaused ? "▶ Resume" : "⏸ Pause";
+
+    public string ToggleRecordingMenuText => IsRecording ? "⏹ Stop Recording" : "🔴 Start Recording…";
+
+    /// <summary>Fires whenever recording status or byte size updates so MainViewModel can refresh the status bar.</summary>
+    public event EventHandler? RecordingStatusUpdated;
+
     public string StatusIcon => State switch
     {
         SessionState.Connected => "🟢",
@@ -49,6 +77,7 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
     public FrameworkElement SessionControl { get; }
 
     public SshSession Session => _session;
+    public ISessionRecorder Recorder => _recorder;
 
     // ── Commands ────────────────────────────────────────────────────────────────
 
@@ -57,16 +86,21 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
     public IRelayCommand? DisconnectCommand => DisconnectSessionCommand;
     public IRelayCommand? FullScreenCommand => null;
     public IRelayCommand? PropertiesCommand => OpenPropertiesCommand;
+    public IRelayCommand? ToggleRecordingCommand => ToggleSessionRecordingCommand;
 
     public SshSessionViewModel(
         SshSession session,
         ConnectionInfo connectionInfo,
         IRelayCommand closeTabCommand,
-        IConnectionRepository? repository = null)
+        IConnectionRepository? repository = null,
+        IAppEnvironment? appEnvironment = null,
+        ISessionRecorder? recorder = null)
     {
         _session        = session ?? throw new ArgumentNullException(nameof(session));
         _connectionInfo = connectionInfo ?? throw new ArgumentNullException(nameof(connectionInfo));
         _repository     = repository;
+        _appEnvironment = appEnvironment;
+        _recorder       = recorder ?? new FileSessionRecorder();
 
         _displayName = string.IsNullOrWhiteSpace(connectionInfo.Name)
             ? connectionInfo.Hostname
@@ -75,9 +109,11 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
         SessionControl = (FrameworkElement)_session.GetSessionControl();
         CloseCommand   = new RelayCommand(() => closeTabCommand.Execute(this));
 
-        _session.StateChanged       += OnSessionStateChanged;
-        _session.NotificationRaised += OnSessionNotificationRaised;
-        _session.HostKeyPromptCallback = PromptHostKeyVerificationAsync;
+        _session.StateChanged          += OnSessionStateChanged;
+        _session.NotificationRaised    += OnSessionNotificationRaised;
+        _session.RawDataReceived       += OnSessionRawDataReceived;
+        _session.HostKeyPromptCallback  = PromptHostKeyVerificationAsync;
+        _recorder.StateChanged         += OnRecorderStateChanged;
     }
 
     // ── Session lifecycle ───────────────────────────────────────────────────────
@@ -86,12 +122,30 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
     {
         try
         {
+            if (_connectionInfo.AutoRecord && !_recorder.IsRecording)
+            {
+                await StartAutoRecordingAsync(ct);
+            }
+
             StatusMessage = $"Connecting to {_connectionInfo.Hostname}:{_connectionInfo.EffectivePort}…";
             await _session.ConnectAsync(_connectionInfo, ct);
         }
         catch (Exception ex)
         {
             StatusMessage = $"Connection failed: {ex.Message}";
+        }
+    }
+
+    private async Task StartAutoRecordingAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            string filePath = SessionRecordingPathResolver.ResolveFilePath(_connectionInfo, _appEnvironment);
+            await _recorder.StartAsync(filePath, _connectionInfo.RecordingFormat, ct);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Auto-record failed to start: {ex.Message}";
         }
     }
 
@@ -119,6 +173,102 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
 
     private bool CanDisconnectSession() =>
         State is SessionState.Connected or SessionState.Connecting;
+
+    // ── Recording Commands (Sprint 6.4) ─────────────────────────────────────────
+
+    [RelayCommand]
+    private async Task ToggleSessionRecordingAsync()
+    {
+        if (_recorder.IsRecording)
+            await StopRecordingAsync();
+        else
+            await StartRecordingAsync();
+    }
+
+    [RelayCommand]
+    private async Task StartRecordingAsync()
+    {
+        if (_recorder.IsRecording)
+            return;
+
+        string suggestedPath = SessionRecordingPathResolver.ResolveFilePath(_connectionInfo, _appEnvironment);
+        string initialDir = Path.GetDirectoryName(suggestedPath)
+                            ?? _appEnvironment?.LogDirectory
+                            ?? AppContext.BaseDirectory;
+
+        try
+        {
+            Directory.CreateDirectory(initialDir);
+        }
+        catch
+        {
+            // Ignore if directory cannot be pre-created
+        }
+
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title            = $"Record SSH Session — {DisplayName}",
+            InitialDirectory = initialDir,
+            FileName         = Path.GetFileName(suggestedPath),
+            Filter           = "Plain Text Log (*.log;*.txt)|*.log;*.txt|Timestamped Log (*.log;*.txt)|*.log;*.txt|HTML Color Log (*.html)|*.html",
+            FilterIndex      = _connectionInfo.RecordingFormat switch
+            {
+                RecordingFormat.Timestamped => 2,
+                RecordingFormat.Html        => 3,
+                _                           => 1
+            },
+            OverwritePrompt = false // FileSessionRecorder appends if file exists
+        };
+
+        if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.FileName))
+        {
+            var selectedFormat = dlg.FilterIndex switch
+            {
+                2 => RecordingFormat.Timestamped,
+                3 => RecordingFormat.Html,
+                _ => Path.GetExtension(dlg.FileName).Equals(".html", StringComparison.OrdinalIgnoreCase)
+                    ? RecordingFormat.Html
+                    : RecordingFormat.PlainText
+            };
+
+            try
+            {
+                await _recorder.StartAsync(dlg.FileName, selectedFormat);
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Could not start recording: {ex.Message}";
+            }
+        }
+    }
+
+    [RelayCommand]
+    private async Task StopRecordingAsync()
+    {
+        if (!_recorder.IsRecording)
+            return;
+
+        string? savedPath = _recorder.CurrentLogPath;
+        await _recorder.StopAsync();
+        if (!string.IsNullOrEmpty(savedPath))
+        {
+            StatusMessage = $"Recording saved: {Path.GetFileName(savedPath)}";
+        }
+    }
+
+    [RelayCommand]
+    private void TogglePauseRecording()
+    {
+        if (!_recorder.IsRecording)
+            return;
+
+        if (_recorder.IsPaused)
+            _recorder.Resume();
+        else
+            _recorder.Pause();
+    }
+
+    // ── Terminal Utility Commands ───────────────────────────────────────────────
 
     [RelayCommand]
     private void CopySelection()
@@ -175,7 +325,45 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
         return Task.FromResult(dlg.Decision);
     }
 
-    // ── Events ──────────────────────────────────────────────────────────────────
+    // ── Events & Recording Tap (Sprint 6.2) ─────────────────────────────────────
+
+    private void OnSessionRawDataReceived(object? sender, ReadOnlyMemory<byte> data)
+    {
+        if (_recorder.IsRecording && !_recorder.IsPaused)
+        {
+            _recorder.Write(data.Span, DateTimeOffset.Now);
+        }
+    }
+
+    private void OnRecorderStateChanged(object? sender, RecordingStateChangedEventArgs e)
+    {
+        void Apply()
+        {
+            IsRecording       = e.IsRecording;
+            IsRecordingPaused = e.IsPaused;
+
+            if (!e.IsRecording || string.IsNullOrEmpty(e.LogPath))
+            {
+                RecordingStatusText = string.Empty;
+            }
+            else
+            {
+                string fileName = Path.GetFileName(e.LogPath);
+                string sizeText = SessionRecordingPathResolver.FormatFileSize(e.BytesWritten);
+                RecordingStatusText = e.IsPaused
+                    ? $"⏸ Paused — {fileName} ({sizeText})"
+                    : $"🔴 Recording — {fileName} ({sizeText})";
+            }
+
+            RecordingStatusUpdated?.Invoke(this, EventArgs.Empty);
+        }
+
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess())
+            dispatcher.BeginInvoke(Apply);
+        else
+            Apply();
+    }
 
     private void OnSessionStateChanged(object? sender, SessionStateChangedEventArgs e)
     {
@@ -220,6 +408,10 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
 
         _session.StateChanged       -= OnSessionStateChanged;
         _session.NotificationRaised -= OnSessionNotificationRaised;
+        _session.RawDataReceived    -= OnSessionRawDataReceived;
+        _recorder.StateChanged      -= OnRecorderStateChanged;
+
+        _recorder.Dispose();
         _session.Dispose();
     }
 }

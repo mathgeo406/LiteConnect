@@ -6,6 +6,10 @@
              DataContextChanged="SshTabView_DataContextChanged"
              Unloaded="SshTabView_Unloaded">
 
+    <UserControl.InputBindings>
+        <KeyBinding Modifiers="Ctrl+Shift" Key="R" Command="{Binding ToggleRecordingCommand}"/>
+    </UserControl.InputBindings>
+
     <UserControl.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
 
@@ -30,6 +34,25 @@
                 Padding="8,4">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <!-- Recording Controls (Sprint 6.4) -->
+                    <Button Content="🔴 Record"
+                            Style="{StaticResource SshToolbarButtonStyle}"
+                            Command="{Binding StartRecordingCommand}"
+                            Visibility="{Binding IsNotRecording, Converter={StaticResource BoolToVisibility}}"
+                            ToolTip="Start session recording (Ctrl+Shift+R)"/>
+                    <Button Content="{Binding PauseResumeButtonText}"
+                            Style="{StaticResource SshToolbarButtonStyle}"
+                            Command="{Binding TogglePauseRecordingCommand}"
+                            Visibility="{Binding IsRecording, Converter={StaticResource BoolToVisibility}}"
+                            ToolTip="Pause or resume session recording"/>
+                    <Button Content="⏹ Stop"
+                            Style="{StaticResource SshToolbarButtonStyle}"
+                            Command="{Binding StopRecordingCommand}"
+                            Visibility="{Binding IsRecording, Converter={StaticResource BoolToVisibility}}"
+                            ToolTip="Stop session recording (Ctrl+Shift+R)"/>
+
+                    <Border Width="1" Background="#3C3C3C" Margin="2,2,8,2"/>
+
                     <Button Content="Copy"
                             Style="{StaticResource SshToolbarButtonStyle}"
                             Command="{Binding CopySelectionCommand}"
@@ -52,11 +75,25 @@
                             Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}}"/>
                 </StackPanel>
 
-                <TextBlock Text="{Binding StatusMessage}"
-                           Foreground="#9E9E9E"
-                           FontSize="11.5"
-                           VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Foreground="#9E9E9E"
+                               FontSize="11.5"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                    <Border Background="#3A1D1D"
+                            BorderBrush="#7A2E2E"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="6,1"
+                            Margin="10,0,0,0"
+                            Visibility="{Binding IsRecording, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding RecordingStatusText}"
+                                   Foreground="#FF9E9E"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                </StackPanel>
             </DockPanel>
         </Border>
 

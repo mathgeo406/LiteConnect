@@ -258,36 +258,48 @@ public sealed class AxMsRdpClient9NotSafeForScripting : AxHost
     // ── Sub-objects ─────────────────────────────────────────────────────────────
 
     public RdpAdvancedSettingsWrapper AdvancedSettings =>
-        new(ComDispatch.GetProperty<object>(Ocx, "AdvancedSettings8")
-            ?? ComDispatch.GetProperty<object>(Ocx, "AdvancedSettings7")
-            ?? ComDispatch.GetProperty<object>(Ocx, "AdvancedSettings2")
+        new(ComDispatch.TryGetProperty<object>(Ocx, "AdvancedSettings9")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "AdvancedSettings8")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "AdvancedSettings7")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "AdvancedSettings2")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "AdvancedSettings")
             ?? throw new InvalidOperationException("Could not retrieve AdvancedSettings from RDP ActiveX control."));
 
     public RdpTransportSettingsWrapper TransportSettings =>
-        new(ComDispatch.GetProperty<object>(Ocx, "TransportSettings2")
-            ?? ComDispatch.GetProperty<object>(Ocx, "TransportSettings")
+        new(ComDispatch.TryGetProperty<object>(Ocx, "TransportSettings4")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "TransportSettings3")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "TransportSettings2")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "TransportSettings")
             ?? throw new InvalidOperationException("Could not retrieve TransportSettings from RDP ActiveX control."));
 
     public RdpSecuredSettingsWrapper SecuredSettings =>
-        new(ComDispatch.GetProperty<object>(Ocx, "SecuredSettings2")
-            ?? ComDispatch.GetProperty<object>(Ocx, "SecuredSettings")
+        new(ComDispatch.TryGetProperty<object>(Ocx, "SecuredSettings3")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "SecuredSettings2")
+            ?? ComDispatch.TryGetProperty<object>(Ocx, "SecuredSettings")
             ?? throw new InvalidOperationException("Could not retrieve SecuredSettings from RDP ActiveX control."));
 
     // ── Password & methods ──────────────────────────────────────────────────────
 
     /// <summary>
-    /// Sets the clear-text password via <see cref="IMsTscNonScriptable"/> (falling back to
-    /// <c>AdvancedSettings2.ClearTextPassword</c> if needed).
+    /// Sets the clear-text password via <c>AdvancedSettings.ClearTextPassword</c> (falling back to
+    /// <see cref="IMsTscNonScriptable"/> if needed).
     /// </summary>
     public void SetClearTextPassword(string password)
     {
-        if (Ocx is IMsTscNonScriptable nonScriptable)
-        {
-            nonScriptable.ClearTextPassword = password;
+        if (ComDispatch.TrySetProperty(AdvancedSettings.ComObject, "ClearTextPassword", password))
             return;
-        }
 
-        AdvancedSettings.ClearTextPassword = password;
+        try
+        {
+            if (Ocx is IMsTscNonScriptable nonScriptable)
+            {
+                nonScriptable.ClearTextPassword = password;
+            }
+        }
+        catch
+        {
+            // Ignore if non-scriptable interface is unavailable
+        }
     }
 
     /// <summary>
@@ -320,7 +332,7 @@ public sealed class AxMsRdpClient9NotSafeForScripting : AxHost
 
         try
         {
-            var driveCollection = ComDispatch.GetProperty<object>(Ocx, "DriveCollection");
+            var driveCollection = ComDispatch.TryGetProperty<object>(Ocx, "DriveCollection");
             if (driveCollection is null)
             {
                 adv.RedirectDrives = true;
@@ -394,63 +406,65 @@ internal sealed class RdpAxEventSink(AxMsRdpClient9NotSafeForScripting owner) : 
 /// </summary>
 public sealed class RdpAdvancedSettingsWrapper(object comObject)
 {
+    internal object ComObject => comObject;
+
     public int RDPPort
     {
         get => ComDispatch.GetProperty<int>(comObject, nameof(RDPPort));
-        set => ComDispatch.SetProperty(comObject, nameof(RDPPort), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(RDPPort), value);
     }
 
     public string ClearTextPassword
     {
-        set => ComDispatch.SetProperty(comObject, nameof(ClearTextPassword), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(ClearTextPassword), value);
     }
 
     public bool SmartSizing
     {
         get => ComDispatch.GetProperty<bool>(comObject, nameof(SmartSizing));
-        set => ComDispatch.SetProperty(comObject, nameof(SmartSizing), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(SmartSizing), value);
     }
 
     public uint AuthenticationLevel
     {
         get => ComDispatch.GetProperty<uint>(comObject, nameof(AuthenticationLevel));
-        set => ComDispatch.SetProperty(comObject, nameof(AuthenticationLevel), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(AuthenticationLevel), value);
     }
 
     public bool EnableCredSspSupport
     {
         get => ComDispatch.GetProperty<bool>(comObject, nameof(EnableCredSspSupport));
-        set => ComDispatch.SetProperty(comObject, nameof(EnableCredSspSupport), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(EnableCredSspSupport), value);
     }
 
     public bool ConnectToAdministerServer
     {
         get => ComDispatch.GetProperty<bool>(comObject, nameof(ConnectToAdministerServer));
-        set => ComDispatch.SetProperty(comObject, nameof(ConnectToAdministerServer), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(ConnectToAdministerServer), value);
     }
 
     public bool RedirectClipboard
     {
         get => ComDispatch.GetProperty<bool>(comObject, nameof(RedirectClipboard));
-        set => ComDispatch.SetProperty(comObject, nameof(RedirectClipboard), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(RedirectClipboard), value);
     }
 
     public bool RedirectDrives
     {
         get => ComDispatch.GetProperty<bool>(comObject, nameof(RedirectDrives));
-        set => ComDispatch.SetProperty(comObject, nameof(RedirectDrives), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(RedirectDrives), value);
     }
 
     public bool RedirectPrinters
     {
         get => ComDispatch.GetProperty<bool>(comObject, nameof(RedirectPrinters));
-        set => ComDispatch.SetProperty(comObject, nameof(RedirectPrinters), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(RedirectPrinters), value);
     }
 
     public bool RedirectSmartCards
     {
         get => ComDispatch.GetProperty<bool>(comObject, nameof(RedirectSmartCards));
-        set => ComDispatch.SetProperty(comObject, nameof(RedirectSmartCards), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(RedirectSmartCards), value);
     }
 
     public bool RedirectDirectX
@@ -549,48 +563,48 @@ public sealed class RdpTransportSettingsWrapper(object comObject)
     public string GatewayHostname
     {
         get => ComDispatch.GetProperty<string>(comObject, nameof(GatewayHostname)) ?? string.Empty;
-        set => ComDispatch.SetProperty(comObject, nameof(GatewayHostname), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(GatewayHostname), value);
     }
 
     public uint GatewayUsageMethod
     {
         get => ComDispatch.GetProperty<uint>(comObject, nameof(GatewayUsageMethod));
-        set => ComDispatch.SetProperty(comObject, nameof(GatewayUsageMethod), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(GatewayUsageMethod), value);
     }
 
     public uint GatewayProfileUsageMethod
     {
         get => ComDispatch.GetProperty<uint>(comObject, nameof(GatewayProfileUsageMethod));
-        set => ComDispatch.SetProperty(comObject, nameof(GatewayProfileUsageMethod), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(GatewayProfileUsageMethod), value);
     }
 
     public uint GatewayCredsSource
     {
         get => ComDispatch.GetProperty<uint>(comObject, nameof(GatewayCredsSource));
-        set => ComDispatch.SetProperty(comObject, nameof(GatewayCredsSource), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(GatewayCredsSource), value);
     }
 
     public uint GatewayCredSharing
     {
         get => ComDispatch.GetProperty<uint>(comObject, nameof(GatewayCredSharing));
-        set => ComDispatch.SetProperty(comObject, nameof(GatewayCredSharing), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(GatewayCredSharing), value);
     }
 
     public string GatewayUsername
     {
         get => ComDispatch.GetProperty<string>(comObject, nameof(GatewayUsername)) ?? string.Empty;
-        set => ComDispatch.SetProperty(comObject, nameof(GatewayUsername), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(GatewayUsername), value);
     }
 
     public string GatewayDomain
     {
         get => ComDispatch.GetProperty<string>(comObject, nameof(GatewayDomain)) ?? string.Empty;
-        set => ComDispatch.SetProperty(comObject, nameof(GatewayDomain), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(GatewayDomain), value);
     }
 
     public string GatewayPassword
     {
-        set => ComDispatch.SetProperty(comObject, nameof(GatewayPassword), value);
+        set => ComDispatch.TrySetProperty(comObject, nameof(GatewayPassword), value);
     }
 }
 
@@ -611,7 +625,22 @@ internal static class ComDispatch
         if (result is null)
             return default;
 
+        if (result is T typed)
+            return typed;
+
         return (T)Convert.ChangeType(result, typeof(T));
+    }
+
+    public static T? TryGetProperty<T>(object comObject, string propertyName)
+    {
+        try
+        {
+            return GetProperty<T>(comObject, propertyName);
+        }
+        catch
+        {
+            return default;
+        }
     }
 
     public static object? GetIndexedProperty(object comObject, string propertyName, params object?[] args)
@@ -626,12 +655,36 @@ internal static class ComDispatch
 
     public static void SetProperty(object comObject, string propertyName, object? value)
     {
-        comObject.GetType().InvokeMember(
-            propertyName,
-            BindingFlags.SetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase,
-            binder: null,
-            target: comObject,
-            args: [value]);
+        try
+        {
+            comObject.GetType().InvokeMember(
+                propertyName,
+                BindingFlags.SetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase,
+                binder: null,
+                target: comObject,
+                args: [value]);
+        }
+        catch (TargetInvocationException tie) when (value is uint u)
+        {
+            // Retry with VT_I4 (int) if the COM dispinterface rejects VT_UI4 (uint)
+            try
+            {
+                comObject.GetType().InvokeMember(
+                    propertyName,
+                    BindingFlags.SetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase,
+                    binder: null,
+                    target: comObject,
+                    args: [(int)u]);
+            }
+            catch
+            {
+                throw tie.InnerException ?? tie;
+            }
+        }
+        catch (TargetInvocationException tie) when (tie.InnerException is not null)
+        {
+            throw tie.InnerException;
+        }
     }
 
     public static bool TrySetProperty(object comObject, string propertyName, object? value)
@@ -649,11 +702,18 @@ internal static class ComDispatch
 
     public static object? InvokeMethod(object comObject, string methodName, params object?[] args)
     {
-        return comObject.GetType().InvokeMember(
-            methodName,
-            BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase,
-            binder: null,
-            target: comObject,
-            args: args);
+        try
+        {
+            return comObject.GetType().InvokeMember(
+                methodName,
+                BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase,
+                binder: null,
+                target: comObject,
+                args: args);
+        }
+        catch (TargetInvocationException tie) when (tie.InnerException is not null)
+        {
+            throw tie.InnerException;
+        }
     }
 }

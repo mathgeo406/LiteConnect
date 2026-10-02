@@ -1,0 +1,182 @@
+<Window x:Class="LiteConnect.App.Views.ImportConnectionsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Import Connections"
+        Width="740" Height="560"
+        MinWidth="640" MinHeight="460"
+        WindowStartupLocation="CenterOwner"
+        Background="#1E1E1E"
+        Foreground="#D4D4D4">
+
+    <DockPanel Margin="20,16">
+        <!-- Bottom Action Bar -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                <Button Content="Select All"
+                        Padding="8,4" Margin="0,0,6,0"
+                        Background="#2D2D2D" Foreground="#D4D4D4" BorderBrush="#3C3C3C"
+                        Cursor="Hand" Click="BtnSelectAll_Click"/>
+                <Button Content="Deselect All"
+                        Padding="8,4" Margin="0,0,12,0"
+                        Background="#2D2D2D" Foreground="#D4D4D4" BorderBrush="#3C3C3C"
+                        Cursor="Hand" Click="BtnDeselectAll_Click"/>
+                <TextBlock x:Name="TxtSummary"
+                           Foreground="#9E9E9E"
+                           VerticalAlignment="Center"
+                           FontSize="12"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="BtnImport"
+                        Content="Import Selected"
+                        Width="130" Padding="10,6"
+                        Margin="0,0,10,0"
+                        Background="#007ACC"
+                        Foreground="White"
+                        BorderBrush="Transparent"
+                        FontWeight="SemiBold"
+                        Cursor="Hand"
+                        IsEnabled="False"
+                        Click="BtnImport_Click"/>
+                <Button Content="Cancel"
+                        Width="90" Padding="8,6"
+                        Background="#2D2D2D"
+                        Foreground="#D4D4D4"
+                        BorderBrush="#3C3C3C"
+                        Cursor="Hand"
+                        IsCancel="True"
+                        Click="BtnCancel_Click"/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Top File & Format Section -->
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <TextBlock Text="SOURCE FILE (.LCX, MREMOTENG .XML, OR .CSV)"
+                       FontSize="11" FontWeight="SemiBold" Foreground="#007ACC"
+                       Margin="0,0,0,6"/>
+
+            <DockPanel Margin="0,0,0,8">
+                <Button DockPanel.Dock="Right"
+                        Content="Browse…"
+                        Width="90" Padding="8,4"
+                        Margin="8,0,0,0"
+                        Background="#2D2D2D" Foreground="#D4D4D4" BorderBrush="#3C3C3C"
+                        Cursor="Hand"
+                        Click="BtnBrowse_Click"/>
+                <TextBox x:Name="TxtFilePath"
+                         Background="#3C3C3C" Foreground="#D4D4D4" BorderBrush="#555555"
+                         Padding="6,4" IsReadOnly="True"/>
+            </DockPanel>
+
+            <!-- Password Panel (shown for encrypted .lcx or mRemoteNG custom password) -->
+            <Border x:Name="PanelPassword"
+                    Background="#252526" BorderBrush="#3C3C3C" BorderThickness="1"
+                    CornerRadius="3" Padding="10,8" Margin="0,0,0,8"
+                    Visibility="Collapsed">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            Content="Decrypt &amp; Preview"
+                            Padding="10,4" Margin="8,0,0,0"
+                            Background="#007ACC" Foreground="White" BorderBrush="Transparent"
+                            Cursor="Hand"
+                            Click="BtnDecryptPreview_Click"/>
+                    <TextBlock Text="Bundle Password:"
+                               Foreground="#D4D4D4" VerticalAlignment="Center"
+                               Margin="0,0,10,0"/>
+                    <PasswordBox x:Name="PwdImport"
+                                 Background="#3C3C3C" Foreground="#D4D4D4" BorderBrush="#555555"
+                                 Padding="6,4"/>
+                </DockPanel>
+            </Border>
+
+            <!-- CSV Column Mapping Panel (shown for .csv files) -->
+            <Border x:Name="PanelCsvMapping"
+                    Background="#252526" BorderBrush="#3C3C3C" BorderThickness="1"
+                    CornerRadius="3" Padding="10,8" Margin="0,0,0,8"
+                    Visibility="Collapsed">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,6">
+                        <Button DockPanel.Dock="Right"
+                                Content="Apply Mapping"
+                                Padding="8,2"
+                                Background="#007ACC" Foreground="White" BorderBrush="Transparent"
+                                Cursor="Hand"
+                                Click="BtnApplyCsvMapping_Click"/>
+                        <CheckBox x:Name="ChkCsvHasHeader"
+                                  Content="First row contains column headers"
+                                  Foreground="#D4D4D4" IsChecked="True"
+                                  VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <UniformGrid Columns="4">
+                        <StackPanel Margin="0,0,6,4">
+                            <TextBlock Text="Name Column" FontSize="11" Foreground="#9E9E9E"/>
+                            <ComboBox x:Name="CboCsvName" Height="24"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,6,4">
+                            <TextBlock Text="Protocol Column" FontSize="11" Foreground="#9E9E9E"/>
+                            <ComboBox x:Name="CboCsvProtocol" Height="24"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,6,4">
+                            <TextBlock Text="Hostname Column" FontSize="11" Foreground="#9E9E9E"/>
+                            <ComboBox x:Name="CboCsvHostname" Height="24"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,4">
+                            <TextBlock Text="Port Column" FontSize="11" Foreground="#9E9E9E"/>
+                            <ComboBox x:Name="CboCsvPort" Height="24"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,6,0">
+                            <TextBlock Text="Username Column" FontSize="11" Foreground="#9E9E9E"/>
+                            <ComboBox x:Name="CboCsvUsername" Height="24"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,6,0">
+                            <TextBlock Text="Folder Column" FontSize="11" Foreground="#9E9E9E"/>
+                            <ComboBox x:Name="CboCsvFolder" Height="24"/>
+                        </StackPanel>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Preview List -->
+        <DockPanel>
+            <TextBlock DockPanel.Dock="Top"
+                       Text="CONNECTIONS TO IMPORT"
+                       FontSize="11" FontWeight="SemiBold" Foreground="#007ACC"
+                       Margin="0,0,0,6"/>
+
+            <ListView x:Name="LstPreview"
+                      Background="#252526"
+                      Foreground="#D4D4D4"
+                      BorderBrush="#3C3C3C"
+                      BorderThickness="1">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Import" Width="55">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                        <GridViewColumn Header="Protocol" Width="65" DisplayMemberBinding="{Binding Protocol}"/>
+                        <GridViewColumn Header="Host:Port" Width="150" DisplayMemberBinding="{Binding HostAndPort}"/>
+                        <GridViewColumn Header="Folder Path" Width="130" DisplayMemberBinding="{Binding FolderPath}"/>
+                        <GridViewColumn Header="Status" Width="80" DisplayMemberBinding="{Binding ConflictStatus}"/>
+                        <GridViewColumn Header="On Conflict" Width="95">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding ResolutionOptions}"
+                                              SelectedItem="{Binding Resolution, Mode=TwoWay}"
+                                              IsEnabled="{Binding HasConflict}"
+                                              Width="82" FontSize="11"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </DockPanel>
+    </DockPanel>
+</Window>

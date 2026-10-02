@@ -14,8 +14,8 @@
         <SolidColorBrush x:Key="Dlg.Background"       Color="#1E1E1E"/>
         <SolidColorBrush x:Key="Dlg.Panel"            Color="#252526"/>
         <SolidColorBrush x:Key="Dlg.Border"           Color="#3C3C3C"/>
-        <SolidColorBrush x:Key="Dlg.Foreground"       Color="#D4D4D4"/>
-        <SolidColorBrush x:Key="Dlg.Foreground.Muted" Color="#858585"/>
+        <SolidColorBrush x:Key="Dlg.Foreground"       Color="#F0F0F0"/>
+        <SolidColorBrush x:Key="Dlg.Foreground.Muted" Color="#B8B8B8"/>
         <SolidColorBrush x:Key="Dlg.Accent"           Color="#007ACC"/>
         <SolidColorBrush x:Key="Dlg.Input.Bg"         Color="#3C3C3C"/>
         <SolidColorBrush x:Key="Dlg.Input.Border"     Color="#555555"/>
@@ -24,13 +24,13 @@
 
         <Style x:Key="FieldLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource Dlg.Foreground.Muted}"/>
-            <Setter Property="FontSize"   Value="11"/>
-            <Setter Property="Margin"     Value="0,0,0,3"/>
+            <Setter Property="FontSize"   Value="11.5"/>
+            <Setter Property="Margin"     Value="0,0,0,4"/>
         </Style>
 
         <Style x:Key="SectionHeader" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource Dlg.Foreground.Muted}"/>
-            <Setter Property="FontSize"   Value="10"/>
+            <Setter Property="Foreground" Value="#3794FF"/>
+            <Setter Property="FontSize"   Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin"     Value="0,4,0,8"/>
         </Style>
@@ -49,18 +49,19 @@
         <Style x:Key="FieldPassword" TargetType="PasswordBox">
             <Setter Property="Background"      Value="{DynamicResource Dlg.Input.Bg}"/>
             <Setter Property="Foreground"      Value="{DynamicResource Dlg.Foreground}"/>
+            <Setter Property="CaretBrush"      Value="{DynamicResource Dlg.Foreground}"/>
             <Setter Property="BorderBrush"     Value="{DynamicResource Dlg.Input.Border}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding"         Value="6,5"/>
             <Setter Property="FontSize"        Value="13"/>
         </Style>
 
-        <Style x:Key="FieldCombo" TargetType="ComboBox">
+        <Style x:Key="FieldCombo" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
             <Setter Property="Background"      Value="{DynamicResource Dlg.Input.Bg}"/>
             <Setter Property="Foreground"      Value="{DynamicResource Dlg.Foreground}"/>
             <Setter Property="BorderBrush"     Value="{DynamicResource Dlg.Input.Border}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding"         Value="6,5"/>
+            <Setter Property="Padding"         Value="8,5"/>
             <Setter Property="FontSize"        Value="13"/>
         </Style>
 
@@ -70,9 +71,8 @@
             <Setter Property="Margin"     Value="0,0,0,6"/>
         </Style>
 
-        <Style TargetType="Separator">
-            <Setter Property="Background" Value="{DynamicResource Dlg.Border}"/>
-            <Setter Property="Margin"     Value="0,10,0,10"/>
+        <Style TargetType="Separator" BasedOn="{StaticResource {x:Type Separator}}">
+            <Setter Property="Margin" Value="0,10,0,10"/>
         </Style>
     </Window.Resources>
 
@@ -92,29 +92,7 @@
                         BorderBrush="Transparent"
                         FontSize="13"
                         IsDefault="True"
-                        Click="BtnOk_Click">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="Bd"
-                                                Background="{TemplateBinding Background}"
-                                                CornerRadius="3"
-                                                Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Bd" Property="Background" Value="#1C97EA"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        Click="BtnOk_Click"/>
                 <Button Content="Cancel"
                         Width="80" Height="30"
                         Background="#3C3C3C"
@@ -122,31 +100,7 @@
                         BorderBrush="{DynamicResource Dlg.Input.Border}"
                         FontSize="13"
                         IsCancel="True"
-                        Click="BtnCancel_Click">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="Bd"
-                                                Background="{TemplateBinding Background}"
-                                                BorderBrush="{TemplateBinding BorderBrush}"
-                                                BorderThickness="1"
-                                                CornerRadius="3"
-                                                Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Bd" Property="Background" Value="#4C4C4C"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        Click="BtnCancel_Click"/>
             </StackPanel>
         </Border>
 
@@ -154,22 +108,9 @@
         <TabControl x:Name="TabControl"
                     Background="{DynamicResource Dlg.Background}"
                     BorderBrush="{DynamicResource Dlg.Border}"
-                    BorderThickness="0">
+                    BorderThickness="0,1,0,0"
+                    Padding="0">
 
-            <TabControl.ItemContainerStyle>
-                <Style TargetType="TabItem">
-                    <Setter Property="Background" Value="{DynamicResource Dlg.Tab.Inactive}"/>
-                    <Setter Property="Foreground" Value="{DynamicResource Dlg.Foreground.Muted}"/>
-                    <Setter Property="Padding"    Value="12,6"/>
-                    <Setter Property="FontSize"   Value="12"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Foreground" Value="White"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </TabControl.ItemContainerStyle>
 
             <!-- ════ 1. Connection tab ═════════════════════════════════════ -->
             <TabItem Header="Connection">
@@ -928,7 +869,7 @@
                                   Content="Auto-start recording when session opens"
                                   Style="{StaticResource FieldCheck}"/>
 
-                        <Grid>
+                        <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="12"/>
@@ -939,12 +880,20 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Recording Directory" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Recording Directory (blank = default logs/)" Style="{StaticResource FieldLabel}"/>
                             <TextBlock Grid.Column="2" Grid.Row="0" Text="Recording Format" Style="{StaticResource FieldLabel}"/>
 
                             <TextBox  x:Name="TxtRecordDir"    Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
                             <ComboBox x:Name="CboRecordFormat" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
                         </Grid>
+
+                        <StackPanel>
+                            <TextBlock Text="File Name Pattern (Variables: {connection}, {host}, {user}, {date}, {time}, {datetime})"
+                                       Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="TxtRecordPattern"
+                                     Style="{StaticResource FieldInput}"
+                                     ToolTip="Default: {connection}_{date}_{time}.log"/>
+                        </StackPanel>
 
                     </StackPanel>
                 </ScrollViewer>
