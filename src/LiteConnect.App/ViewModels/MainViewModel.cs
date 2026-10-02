@@ -12,13 +12,15 @@ namespace LiteConnect.App.ViewModels;
 
 /// <summary>
 /// Root ViewModel bound to <c>MainWindow</c>.
-/// Owns the tab strip and drives the Quick Connect bar.
+/// Owns the tab strip, drives the Quick Connect bar, and exposes the active tab's recording status.
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly IConnectionRepository _repository;
     private readonly ICredentialStore _credentialStore;
     private readonly IKnownHostsStore? _knownHostsStore;
+    private readonly IAppEnvironment? _appEnvironment;
+    private readonly ISessionRecorderFactory? _recorderFactory;
 
     // ── Sub-ViewModels ──────────────────────────────────────────────────────────
 
@@ -29,12 +31,16 @@ public sealed partial class MainViewModel : ObservableObject
         ConnectionTreeViewModel treeViewModel,
         IConnectionRepository repository,
         ICredentialStore credentialStore,
-        IKnownHostsStore? knownHostsStore = null)
+        IKnownHostsStore? knownHostsStore = null,
+        IAppEnvironment? appEnvironment = null,
+        ISessionRecorderFactory? recorderFactory = null)
     {
         TreeViewModel    = treeViewModel;
         _repository      = repository;
         _credentialStore = credentialStore;
         _knownHostsStore = knownHostsStore;
+        _appEnvironment  = appEnvironment;
+        _recorderFactory = recorderFactory;
 
         TreeViewModel.ConnectionOpenRequested += (_, conn) => _ = OpenSessionAsync(conn);
     }
@@ -49,8 +55,40 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnActiveTabChanged(ISessionTabViewModel? oldValue, ISessionTabViewModel? newValue)
     {
-        if (oldValue is not null) oldValue.IsActive = false;
-        if (newValue is not null) newValue.IsActive = true;
+        if (oldValue is not null)
+        {
+            oldValue.IsActive = false;
+            if (oldValue is SshSessionViewModel oldSsh)
+                oldSsh.RecordingStatusUpdated -= OnActiveTabRecordingUpdated;
+        }
+
+        if (newValue is not null)
+        {
+            newValue.IsActive = true;
+            if (newValue is SshSessionViewModel newSsh)
+                newSsh.RecordingStatusUpdated += OnActiveTabRecordingUpdated;
+        }
+
+        RefreshRecordingStatusBar();
+    }
+
+    private void OnActiveTabRecordingUpdated(object? sender, EventArgs e)
+    {
+        RefreshRecordingStatusBar();
+    }
+
+    private void RefreshRecordingStatusBar()
+    {
+        if (ActiveTab is SshSessionViewModel sshTab && sshTab.IsRecording)
+        {
+            IsActiveTabRecording      = true;
+            ActiveRecordingStatusText = sshTab.RecordingStatusText;
+        }
+        else
+        {
+            IsActiveTabRecording      = false;
+            ActiveRecordingStatusText = string.Empty;
+        }
     }
 
     // ── Quick Connect bar ───────────────────────────────────────────────────────
@@ -69,14 +107,29 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = "Ready";
 
+    [ObservableProperty]
+    private bool _isActiveTabRecording;
+
+    [ObservableProperty]
+    private string _activeRecordingStatusText = string.Empty;
+
     public int OpenSessionCount => Tabs.Count;
 
     // ── Commands ────────────────────────────────────────────────────────────────
 
     [RelayCommand]
+    private void ToggleActiveTabRecording()
+    {
+        ActiveTab?.ToggleRecordingCommand?.Execute(null);
+    }
+
+    [RelayCommand]
     private void CloseTab(ISessionTabViewModel? tab)
     {
         if (tab is null) return;
+
+        if (tab is SshSessionViewModel sshVm)
+            sshVm.RecordingStatusUpdated -= OnActiveTabRecordingUpdated;
 
         var idx = Tabs.IndexOf(tab);
         Tabs.Remove(tab);
@@ -90,6 +143,7 @@ public sealed partial class MainViewModel : ObservableObject
         try { tab.Dispose(); } catch { /* best-effort cleanup */ }
 
         OnPropertyChanged(nameof(OpenSessionCount));
+        RefreshRecordingStatusBar();
         StatusText = Tabs.Count == 0 ? "Ready" : $"{Tabs.Count} session(s) open";
     }
 
@@ -150,7 +204,7 @@ public sealed partial class MainViewModel : ObservableObject
         dlg.ShowDialog();
     }
 
-    // ── Session factory / tab launcher (Sprint 3.5, 4.7, 5.1) ───────────────────
+    // ── Session factory / tab launcher (Sprint 3.5, 4.7, 5.1, 6.2) ──────────────
 
     /// <summary>
     /// Resolves effective credentials (Connection → Group → Global) and opens a protocol session tab.
@@ -172,7 +226,14 @@ public sealed partial class MainViewModel : ObservableObject
         else if (effectiveConnection.Protocol == ProtocolType.SSH)
         {
             var sshSession = new SshSession(_knownHostsStore);
-            var sshVm      = new SshSessionViewModel(sshSession, effectiveConnection, CloseTabCommand, _repository);
+            var recorder   = _recorderFactory?.CreateRecorder();
+            var sshVm      = new SshSessionViewModel(
+                sshSession,
+                effectiveConnection,
+                CloseTabCommand,
+                _repository,
+                _appEnvironment,
+                recorder);
             AddTab(sshVm);
             await sshVm.ConnectAsync();
         }

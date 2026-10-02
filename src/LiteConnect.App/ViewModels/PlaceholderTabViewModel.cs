@@ -23,6 +23,7 @@ public sealed partial class PlaceholderTabViewModel : ObservableObject, ISession
     public IRelayCommand? DisconnectCommand => null;
     public IRelayCommand? FullScreenCommand => null;
     public IRelayCommand? PropertiesCommand => null;
+    public IRelayCommand? ToggleRecordingCommand => null;
 
     public PlaceholderTabViewModel(ConnectionInfo connection, IRelayCommand closeTabCommand)
     {

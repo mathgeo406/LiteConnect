@@ -928,7 +928,7 @@
                                   Content="Auto-start recording when session opens"
                                   Style="{StaticResource FieldCheck}"/>
 
-                        <Grid>
+                        <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="12"/>
@@ -939,12 +939,20 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Recording Directory" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Recording Directory (blank = default logs/)" Style="{StaticResource FieldLabel}"/>
                             <TextBlock Grid.Column="2" Grid.Row="0" Text="Recording Format" Style="{StaticResource FieldLabel}"/>
 
                             <TextBox  x:Name="TxtRecordDir"    Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
                             <ComboBox x:Name="CboRecordFormat" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
                         </Grid>
+
+                        <StackPanel>
+                            <TextBlock Text="File Name Pattern (Variables: {connection}, {host}, {user}, {date}, {time}, {datetime})"
+                                       Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="TxtRecordPattern"
+                                     Style="{StaticResource FieldInput}"
+                                     ToolTip="Default: {connection}_{date}_{time}.log"/>
+                        </StackPanel>
 
                     </StackPanel>
                 </ScrollViewer>

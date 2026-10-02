@@ -45,6 +45,8 @@ public partial class App : WpfApplication
                     services.AddSingleton<ICredentialStore>(sp => sp.GetRequiredService<SqlCipherCredentialStore>());
                     services.AddSingleton<IConnectionRepository, LiteConnect.Core.Data.SqliteConnectionRepository>();
                     services.AddSingleton<IKnownHostsStore, LiteConnect.Core.Data.SqliteKnownHostsStore>();
+                    services.AddSingleton<ISessionRecorderFactory, LiteConnect.Core.Recording.SessionRecorderFactory>();
+                    services.AddTransient<ISessionRecorder, LiteConnect.Core.Recording.FileSessionRecorder>();
                     services.AddSingleton<LiteConnect.Core.Data.DatabaseInitializer>();
 
                     // ── App services ─────────────────────────────────────────────

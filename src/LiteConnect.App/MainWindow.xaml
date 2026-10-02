@@ -11,6 +11,10 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Shell.Background}">
 
+    <Window.InputBindings>
+        <KeyBinding Modifiers="Ctrl+Shift" Key="R" Command="{Binding ToggleActiveTabRecordingCommand}"/>
+    </Window.InputBindings>
+
     <Window.Resources>
         <!-- ── Colour tokens ─────────────────────────────────────────────── -->
         <SolidColorBrush x:Key="Shell.Background"          Color="#1E1E1E"/>
@@ -69,6 +73,10 @@
                                               Command="{Binding DisconnectCommand}"/>
                                     <MenuItem Header="Full Screen"
                                               Command="{Binding FullScreenCommand}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Start / Stop Recording"
+                                              InputGestureText="Ctrl+Shift+R"
+                                              Command="{Binding ToggleRecordingCommand}"/>
                                     <Separator/>
                                     <MenuItem Header="Properties…"
                                               Command="{Binding PropertiesCommand}"/>
@@ -274,6 +282,18 @@
                     <Run Text="{Binding OpenSessionCount, Mode=OneWay}"/>
                     <Run Text=" session(s)"/>
                 </TextBlock>
+                <Border DockPanel.Dock="Right"
+                        Background="#9E1C1C"
+                        CornerRadius="3"
+                        Padding="8,1"
+                        Margin="12,0,0,0"
+                        Visibility="{Binding IsActiveTabRecording, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding ActiveRecordingStatusText}"
+                               Foreground="White"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </Border>
                 <TextBlock Text="{Binding StatusText}"
                            Foreground="White"
                            FontSize="11"

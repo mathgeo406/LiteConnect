@@ -60,6 +60,7 @@ public sealed partial class RdpSessionViewModel : ObservableObject, ISessionTabV
     public IRelayCommand? DisconnectCommand => DisconnectSessionCommand;
     public IRelayCommand? FullScreenCommand => EnterFullScreenCommand;
     public IRelayCommand? PropertiesCommand => OpenPropertiesCommand;
+    public IRelayCommand? ToggleRecordingCommand => null;
 
     // ── Constructor ─────────────────────────────────────────────────────────────
 

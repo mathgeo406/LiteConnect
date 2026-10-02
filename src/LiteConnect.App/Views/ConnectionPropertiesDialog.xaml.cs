@@ -211,6 +211,7 @@ public partial class ConnectionPropertiesDialog : Window
         ChkAutoRecord.IsChecked      = _model.AutoRecord;
         CboRecordFormat.SelectedItem = _model.RecordingFormat;
         TxtRecordDir.Text            = _model.RecordingDirectory ?? string.Empty;
+        TxtRecordPattern.Text        = _model.RecordingFilePattern ?? "{connection}_{date}_{time}.log";
     }
 
     // ── Save controls → model ───────────────────────────────────────────────────
@@ -351,9 +352,10 @@ public partial class ConnectionPropertiesDialog : Window
         };
 
         // Recording
-        _model.AutoRecord         = ChkAutoRecord.IsChecked == true;
-        _model.RecordingFormat    = (RecordingFormat)CboRecordFormat.SelectedItem!;
-        _model.RecordingDirectory = NullIfEmpty(TxtRecordDir.Text);
+        _model.AutoRecord           = ChkAutoRecord.IsChecked == true;
+        _model.RecordingFormat      = (RecordingFormat)CboRecordFormat.SelectedItem!;
+        _model.RecordingDirectory   = NullIfEmpty(TxtRecordDir.Text);
+        _model.RecordingFilePattern = NullIfEmpty(TxtRecordPattern.Text);
 
         return true;
     }

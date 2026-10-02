@@ -8,11 +8,20 @@ namespace LiteConnect.Core.Abstractions;
 /// </summary>
 public interface ISessionRecorder : IDisposable
 {
-    /// <summary>True while recording is active (and not paused).</summary>
+    /// <summary>True while a recording session is open (including when paused).</summary>
     bool IsRecording { get; }
+
+    /// <summary>True when recording is currently paused (incoming data is discarded).</summary>
+    bool IsPaused { get; }
 
     /// <summary>Path to the active log file; null when not recording.</summary>
     string? CurrentLogPath { get; }
+
+    /// <summary>The format of the active recording.</summary>
+    RecordingFormat CurrentFormat { get; }
+
+    /// <summary>Total formatted bytes written to the current log file.</summary>
+    long BytesWritten { get; }
 
     /// <summary>Begin recording to <paramref name="filePath"/>.</summary>
     Task StartAsync(string filePath, RecordingFormat format, CancellationToken ct = default);
@@ -28,18 +37,24 @@ public interface ISessionRecorder : IDisposable
 
     /// <summary>
     /// Receives raw bytes from the SSH stream.
-    /// Called on whatever thread delivers SSH data; must be thread-safe.
+    /// Called on whatever thread delivers SSH data; must be thread-safe and non-blocking.
     /// </summary>
     void Write(ReadOnlySpan<byte> data, DateTimeOffset timestamp);
 
-    /// <summary>Fires when recording state changes (start/stop/pause/resume).</summary>
+    /// <summary>Fires when recording state or byte count changes (start/stop/pause/resume/flush).</summary>
     event EventHandler<RecordingStateChangedEventArgs> StateChanged;
 }
 
-public sealed class RecordingStateChangedEventArgs(bool isRecording, string? logPath) : EventArgs
+public sealed class RecordingStateChangedEventArgs(
+    bool isRecording,
+    string? logPath,
+    bool isPaused = false,
+    long bytesWritten = 0) : EventArgs
 {
     public bool IsRecording { get; } = isRecording;
+    public bool IsPaused { get; } = isPaused;
     public string? LogPath { get; } = logPath;
+    public long BytesWritten { get; } = bytesWritten;
 }
 
 /// <summary>Factory that creates one <see cref="ISessionRecorder"/> per SSH session tab.</summary>

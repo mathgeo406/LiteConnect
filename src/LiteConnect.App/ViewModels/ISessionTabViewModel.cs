@@ -21,6 +21,12 @@ public interface ISessionTabViewModel : IDisposable
     /// <summary>True when this tab is the selected one.</summary>
     bool IsActive { get; set; }
 
+    /// <summary>True when session recording is currently active on this tab.</summary>
+    bool IsRecording => false;
+
+    /// <summary>Formatted recording status indicator text for the main status bar.</summary>
+    string RecordingStatusText => string.Empty;
+
     /// <summary>Command that closes (removes) this tab.</summary>
     IRelayCommand CloseCommand { get; }
 
@@ -35,4 +41,7 @@ public interface ISessionTabViewModel : IDisposable
 
     /// <summary>Command to open the connection properties dialog.</summary>
     IRelayCommand? PropertiesCommand { get; }
+
+    /// <summary>Command to start or stop session recording (SSH tabs).</summary>
+    IRelayCommand? ToggleRecordingCommand => null;
 }
