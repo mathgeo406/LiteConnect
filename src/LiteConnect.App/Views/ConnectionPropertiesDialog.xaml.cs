@@ -1,5 +1,7 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using LiteConnect.Core.Models;
+using LiteConnect.Terminal;
 
 namespace LiteConnect.App.Views;
 
@@ -11,7 +13,8 @@ namespace LiteConnect.App.Views;
 public partial class ConnectionPropertiesDialog : Window
 {
     private readonly ConnectionInfo _model;
-    private readonly bool           _isNew;
+    private readonly bool _isNew;
+    private readonly ObservableCollection<PortForwardRule> _portForwards = [];
 
     public ConnectionInfo? Result { get; private set; }
 
@@ -29,6 +32,8 @@ public partial class ConnectionPropertiesDialog : Window
             Port     = 22
         };
 
+        LstPortForwards.ItemsSource = _portForwards;
+
         PopulateStaticItems();
         LoadModel();
         UpdateProtocolVisibility(_model.Protocol);
@@ -38,9 +43,15 @@ public partial class ConnectionPropertiesDialog : Window
 
     private void PopulateStaticItems()
     {
-        CboProtocol.ItemsSource     = Enum.GetValues<ProtocolType>();
-        CboTerminalType.ItemsSource = new[] { "xterm-256color", "xterm", "vt100", "vt220" };
-        CboEncoding.ItemsSource     = new[] { "UTF-8", "ISO-8859-1", "Windows-1252" };
+        CboProtocol.ItemsSource      = Enum.GetValues<ProtocolType>();
+        CboSshAuthMethod.ItemsSource = new[] { "Password", "PrivateKey", "KeyAndPassword", "KeyboardInteractive" };
+        CboTerminalType.ItemsSource  = new[] { "xterm-256color", "xterm", "vt100", "vt220" };
+        CboEncoding.ItemsSource      = new[] { "UTF-8", "ISO-8859-1", "Windows-1252" };
+        CboFontFamily.ItemsSource    = new[] { "Cascadia Mono", "Consolas", "Courier New", "Lucida Console" };
+        CboColorScheme.ItemsSource   = TerminalTheme.AvailableSchemes;
+        CboCursorStyle.ItemsSource   = new[] { "Block", "Underline", "Bar" };
+        CboBellAction.ItemsSource    = new[] { "Visual", "Sound", "None" };
+        CboForwardType.ItemsSource   = Enum.GetValues<PortForwardType>();
 
         // RDP Display
         CboResolutionMode.ItemsSource = new[] { "Auto", "MatchMonitor", "Custom", "FullScreen" };
@@ -89,13 +100,37 @@ public partial class ConnectionPropertiesDialog : Window
         PwdKeyPassphrase.Password = _model.KeyPassphrase ?? string.Empty;
         TxtNotes.Text             = _model.Notes ?? string.Empty;
 
-        // SSH settings
+        // SSH settings (Sprint 5.6)
         var ssh = _model.SshSettings ?? new SshConnectionSettings();
-        CboTerminalType.SelectedItem = ssh.TerminalType ?? "xterm-256color";
-        CboEncoding.SelectedItem     = ssh.Encoding ?? "UTF-8";
-        TxtScrollback.Text           = ssh.ScrollbackLines?.ToString() ?? "10000";
-        TxtKeepalive.Text            = ssh.KeepaliveIntervalSeconds?.ToString() ?? "60";
+        CboSshAuthMethod.SelectedItem = ssh.AuthMethod ?? (!string.IsNullOrWhiteSpace(_model.PrivateKeyPath) ? "PrivateKey" : "Password");
+        ChkAgentForwarding.IsChecked  = ssh.AgentForwarding ?? false;
+
+        CboTerminalType.SelectedItem  = ssh.TerminalType ?? "xterm-256color";
+        CboEncoding.SelectedItem      = ssh.Encoding ?? "UTF-8";
+        TxtScrollback.Text            = (ssh.ScrollbackLines ?? 10000).ToString();
+        CboFontFamily.SelectedItem    = ssh.FontFamily ?? "Cascadia Mono";
+        TxtFontSize.Text              = (ssh.FontSize ?? 12).ToString();
+        CboColorScheme.SelectedItem   = ssh.ColorScheme ?? "Default Dark";
+        CboCursorStyle.SelectedItem   = ssh.CursorStyle ?? "Block";
+        CboBellAction.SelectedItem    = ssh.BellAction ?? "Visual";
+        ChkCursorBlink.IsChecked      = ssh.CursorBlink ?? true;
+
+        // Tunneling rules
+        CboForwardType.SelectedItem = PortForwardType.Local;
+        _portForwards.Clear();
+        if (ssh.PortForwards is not null)
+        {
+            foreach (var pf in ssh.PortForwards)
+                _portForwards.Add(pf);
+        }
+
+        // SSH Advanced
+        ChkSendKeepalive.IsChecked   = ssh.SendKeepalive ?? true;
+        TxtKeepalive.Text            = (ssh.KeepaliveIntervalSeconds ?? 60).ToString();
+        TxtSshConnectTimeout.Text    = (ssh.ConnectTimeoutSeconds ?? 15).ToString();
         ChkCompression.IsChecked     = ssh.Compression ?? false;
+        ChkSshAutoReconnect.IsChecked = ssh.AutoReconnect ?? true;
+        TxtStartupCommand.Text       = ssh.StartupCommand ?? string.Empty;
 
         // RDP settings
         var rdp = _model.RdpSettings ?? new RdpConnectionSettings();
@@ -161,11 +196,16 @@ public partial class ConnectionPropertiesDialog : Window
 
         // Proxy settings
         var proxy = _model.ProxySettings ?? new ProxySettings();
-        CboProxyType.SelectedItem  = proxy.Type;
-        TxtProxyHost.Text          = proxy.Host ?? string.Empty;
-        TxtProxyPort.Text          = proxy.Port?.ToString() ?? string.Empty;
-        TxtProxyUsername.Text      = proxy.Username ?? string.Empty;
-        PwdProxyPassword.Password  = proxy.Password ?? string.Empty;
+        CboProxyType.SelectedItem    = proxy.Type;
+        TxtProxyHost.Text            = proxy.Host ?? string.Empty;
+        TxtProxyPort.Text            = proxy.Port?.ToString() ?? string.Empty;
+        TxtProxyUsername.Text        = proxy.Username ?? string.Empty;
+        PwdProxyPassword.Password    = proxy.Password ?? string.Empty;
+        TxtJumpHostName.Text         = proxy.JumpHostName ?? string.Empty;
+        TxtJumpHostPort.Text         = (proxy.JumpHostPort ?? 22).ToString();
+        TxtJumpHostUsername.Text     = proxy.JumpHostUsername ?? string.Empty;
+        PwdJumpHostPassword.Password = proxy.JumpHostPassword ?? string.Empty;
+        TxtJumpHostKeyPath.Text      = proxy.JumpHostPrivateKeyPath ?? string.Empty;
 
         // Recording
         ChkAutoRecord.IsChecked      = _model.AutoRecord;
@@ -207,14 +247,27 @@ public partial class ConnectionPropertiesDialog : Window
         _model.Notes          = NullIfEmpty(TxtNotes.Text);
         _model.UpdatedAt      = DateTimeOffset.UtcNow;
 
-        // SSH
+        // SSH (Sprint 5.6)
         _model.SshSettings = _model.Protocol == ProtocolType.SSH ? new SshConnectionSettings
         {
+            AuthMethod               = CboSshAuthMethod.SelectedItem as string,
+            AgentForwarding          = ChkAgentForwarding.IsChecked,
             TerminalType             = CboTerminalType.SelectedItem as string,
             Encoding                 = CboEncoding.SelectedItem as string,
-            ScrollbackLines          = int.TryParse(TxtScrollback.Text, out var sb) ? sb : null,
-            KeepaliveIntervalSeconds = int.TryParse(TxtKeepalive.Text, out var ka) ? ka : null,
-            Compression              = ChkCompression.IsChecked
+            ScrollbackLines          = int.TryParse(TxtScrollback.Text, out var sb) ? sb : 10000,
+            FontFamily               = CboFontFamily.SelectedItem as string ?? "Cascadia Mono",
+            FontSize                 = int.TryParse(TxtFontSize.Text, out var fs) ? Math.Clamp(fs, 8, 48) : 12,
+            ColorScheme              = CboColorScheme.SelectedItem as string ?? "Default Dark",
+            CursorStyle              = CboCursorStyle.SelectedItem as string ?? "Block",
+            BellAction               = CboBellAction.SelectedItem as string ?? "Visual",
+            CursorBlink              = ChkCursorBlink.IsChecked,
+            PortForwards             = _portForwards.Count > 0 ? [.. _portForwards] : null,
+            SendKeepalive            = ChkSendKeepalive.IsChecked,
+            KeepaliveIntervalSeconds = int.TryParse(TxtKeepalive.Text, out var ka) ? ka : 60,
+            ConnectTimeoutSeconds    = int.TryParse(TxtSshConnectTimeout.Text, out var sct) ? sct : 15,
+            Compression              = ChkCompression.IsChecked,
+            AutoReconnect            = ChkSshAutoReconnect.IsChecked,
+            StartupCommand           = NullIfEmpty(TxtStartupCommand.Text)
         } : null;
 
         // RDP (all §2.3 fields)
@@ -285,11 +338,16 @@ public partial class ConnectionPropertiesDialog : Window
         var proxyType = (ProxyType)CboProxyType.SelectedItem!;
         _model.ProxySettings = proxyType == ProxyType.None ? null : new ProxySettings
         {
-            Type     = proxyType,
-            Host     = NullIfEmpty(TxtProxyHost.Text),
-            Port     = int.TryParse(TxtProxyPort.Text, out var pp) ? pp : null,
-            Username = NullIfEmpty(TxtProxyUsername.Text),
-            Password = NullIfEmpty(PwdProxyPassword.Password)
+            Type                   = proxyType,
+            Host                   = NullIfEmpty(TxtProxyHost.Text),
+            Port                   = int.TryParse(TxtProxyPort.Text, out var pp) ? pp : null,
+            Username               = NullIfEmpty(TxtProxyUsername.Text),
+            Password               = NullIfEmpty(PwdProxyPassword.Password),
+            JumpHostName           = NullIfEmpty(TxtJumpHostName.Text),
+            JumpHostPort           = int.TryParse(TxtJumpHostPort.Text, out var jhp) ? jhp : 22,
+            JumpHostUsername       = NullIfEmpty(TxtJumpHostUsername.Text),
+            JumpHostPassword       = NullIfEmpty(PwdJumpHostPassword.Password),
+            JumpHostPrivateKeyPath = NullIfEmpty(TxtJumpHostKeyPath.Text)
         };
 
         // Recording
@@ -341,17 +399,61 @@ public partial class ConnectionPropertiesDialog : Window
         var isSsh = protocol == ProtocolType.SSH;
         var isRdp = protocol == ProtocolType.RDP;
 
-        PanelSshKey.Visibility     = isSsh ? Visibility.Visible : Visibility.Collapsed;
-        PanelDomain.Visibility     = isRdp ? Visibility.Visible : Visibility.Collapsed;
+        PanelSshKey.Visibility      = isSsh ? Visibility.Visible : Visibility.Collapsed;
+        PanelDomain.Visibility      = isRdp ? Visibility.Visible : Visibility.Collapsed;
+        PanelSshAdvanced.Visibility = isSsh ? Visibility.Visible : Visibility.Collapsed;
         PanelRdpAdvanced.Visibility = isRdp ? Visibility.Visible : Visibility.Collapsed;
 
         TabSsh.Visibility           = isSsh ? Visibility.Visible : Visibility.Collapsed;
+        TabSshTunneling.Visibility  = isSsh ? Visibility.Visible : Visibility.Collapsed;
         TabProxy.Visibility         = isRdp ? Visibility.Collapsed : Visibility.Visible;
 
         TabRdpDisplay.Visibility    = isRdp ? Visibility.Visible : Visibility.Collapsed;
         TabRdpGateway.Visibility    = isRdp ? Visibility.Visible : Visibility.Collapsed;
         TabRdpResources.Visibility  = isRdp ? Visibility.Visible : Visibility.Collapsed;
         TabRdpExperience.Visibility = isRdp ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void BtnAddPortForward_Click(object sender, RoutedEventArgs e)
+    {
+        if (!int.TryParse(TxtForwardBoundPort.Text, out int boundPort) || boundPort is <= 0 or > 65535)
+        {
+            System.Windows.MessageBox.Show("Enter a valid Bind Port (1–65535).", "Port Forwarding", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        var fwdType = CboForwardType.SelectedItem is PortForwardType t ? t : PortForwardType.Local;
+        int targetPort = 0;
+
+        if (fwdType != PortForwardType.Dynamic)
+        {
+            if (!int.TryParse(TxtForwardTargetPort.Text, out targetPort) || targetPort is <= 0 or > 65535)
+            {
+                System.Windows.MessageBox.Show("Enter a valid Target Port (1–65535).", "Port Forwarding", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+        }
+
+        _portForwards.Add(new PortForwardRule
+        {
+            Type        = fwdType,
+            BindAddress = string.IsNullOrWhiteSpace(TxtForwardBindAddr.Text) ? "127.0.0.1" : TxtForwardBindAddr.Text.Trim(),
+            BoundPort   = boundPort,
+            TargetHost  = string.IsNullOrWhiteSpace(TxtForwardTargetHost.Text) ? "localhost" : TxtForwardTargetHost.Text.Trim(),
+            TargetPort  = targetPort,
+            Enabled     = true
+        });
+
+        TxtForwardBoundPort.Clear();
+        TxtForwardTargetPort.Clear();
+    }
+
+    private void BtnRemovePortForward_Click(object sender, RoutedEventArgs e)
+    {
+        if (LstPortForwards.SelectedItem is PortForwardRule selected)
+        {
+            _portForwards.Remove(selected);
+        }
     }
 
     private void BtnOk_Click(object sender, RoutedEventArgs e)

@@ -269,9 +269,26 @@
                             <TextBox x:Name="TxtDomain" Style="{StaticResource FieldInput}"/>
                         </StackPanel>
 
-                        <!-- SSH-only: Private key -->
+                        <!-- SSH-only: Authentication & Private key (Sprint 5.6) -->
                         <StackPanel x:Name="PanelSshKey" Margin="0,0,0,10">
-                            <TextBlock Text="Private Key File" Style="{StaticResource FieldLabel}"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="220"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="SSH Auth Method" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox x:Name="CboSshAuthMethod" Style="{StaticResource FieldCombo}"/>
+                                </StackPanel>
+                                <CheckBox x:Name="ChkAgentForwarding"
+                                          Grid.Column="2"
+                                          VerticalAlignment="Bottom"
+                                          Content="Forward local SSH agent"
+                                          Style="{StaticResource FieldCheck}"/>
+                            </Grid>
+
+                            <TextBlock Text="Private Key File (.pem, .ppk, OpenSSH)" Style="{StaticResource FieldLabel}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -310,15 +327,45 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- ════ 2. SSH tab ════════════════════════════════════════════ -->
-            <TabItem x:Name="TabSsh" Header="SSH">
+            <!-- ════ 2. SSH Terminal tab (Sprint 5.6) ═══════════════════════ -->
+            <TabItem x:Name="TabSsh" Header="Terminal">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               Background="{DynamicResource Dlg.Background}">
                     <StackPanel Margin="20,16">
 
+                        <TextBlock Text="TERMINAL EMULATION" Style="{StaticResource SectionHeader}"/>
+
                         <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="120"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Terminal Type" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Character Encoding" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="0" Text="Scrollback Lines" Style="{StaticResource FieldLabel}"/>
+
+                            <ComboBox x:Name="CboTerminalType" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <ComboBox x:Name="CboEncoding"     Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <TextBox  x:Name="TxtScrollback"   Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                        </Grid>
+
+                        <Separator/>
+
+                        <TextBlock Text="APPEARANCE &amp; CURSOR" Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="90"/>
                                 <ColumnDefinition Width="12"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
@@ -330,22 +377,93 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Terminal Type" Style="{StaticResource FieldLabel}"/>
-                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Encoding" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Font Family" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Font Size" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="0" Text="Color Scheme" Style="{StaticResource FieldLabel}"/>
 
-                            <ComboBox x:Name="CboTerminalType" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
-                            <ComboBox x:Name="CboEncoding" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <ComboBox x:Name="CboFontFamily"  Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <TextBox  x:Name="TxtFontSize"    Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <ComboBox x:Name="CboColorScheme" Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
 
-                            <TextBlock Grid.Column="0" Grid.Row="3" Text="Scrollback Lines" Style="{StaticResource FieldLabel}"/>
-                            <TextBlock Grid.Column="2" Grid.Row="3" Text="Keepalive (seconds)" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="0" Grid.Row="3" Text="Cursor Style" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="3" Text="Bell Action" Style="{StaticResource FieldLabel}"/>
 
-                            <TextBox x:Name="TxtScrollback" Grid.Column="0" Grid.Row="4" Style="{StaticResource FieldInput}"/>
-                            <TextBox x:Name="TxtKeepalive" Grid.Column="2" Grid.Row="4" Style="{StaticResource FieldInput}"/>
+                            <ComboBox x:Name="CboCursorStyle" Grid.Column="0" Grid.Row="4" Style="{StaticResource FieldCombo}"/>
+                            <ComboBox x:Name="CboBellAction"  Grid.Column="4" Grid.Row="4" Style="{StaticResource FieldCombo}"/>
                         </Grid>
 
-                        <CheckBox x:Name="ChkCompression"
-                                  Content="Enable compression"
+                        <CheckBox x:Name="ChkCursorBlink"
+                                  Content="Blink cursor when terminal is focused"
                                   Style="{StaticResource FieldCheck}"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ════ 2b. SSH Tunneling tab (Sprint 5.6) ═════════════════════ -->
+            <TabItem x:Name="TabSshTunneling" Header="Tunneling">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Dlg.Background}">
+                    <StackPanel Margin="20,16">
+
+                        <TextBlock Text="SSH PORT FORWARDING (LOCAL / REMOTE / DYNAMIC SOCKS)"
+                                   Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="95"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="105"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Type" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Bind Address" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="4" Grid.Row="0" Text="Bind Port" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="6" Grid.Row="0" Text="Target Host" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="8" Grid.Row="0" Text="Target Port" Style="{StaticResource FieldLabel}"/>
+
+                            <ComboBox x:Name="CboForwardType"       Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldCombo}"/>
+                            <TextBox  x:Name="TxtForwardBindAddr"   Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}" Text="127.0.0.1"/>
+                            <TextBox  x:Name="TxtForwardBoundPort"  Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <TextBox  x:Name="TxtForwardTargetHost" Grid.Column="6" Grid.Row="1" Style="{StaticResource FieldInput}" Text="localhost"/>
+                            <TextBox  x:Name="TxtForwardTargetPort" Grid.Column="8" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <Button   Grid.Column="10" Grid.Row="1" Content="Add"
+                                      Background="#007ACC"
+                                      Foreground="White"
+                                      BorderBrush="#007ACC"
+                                      Padding="12,5"
+                                      FontSize="12"
+                                      Click="BtnAddPortForward_Click"/>
+                        </Grid>
+
+                        <ListBox x:Name="LstPortForwards"
+                                 Height="140"
+                                 Background="#252526"
+                                 Foreground="#D4D4D4"
+                                 BorderBrush="#3C3C3C"
+                                 DisplayMemberPath="Summary"
+                                 Margin="0,0,0,8"/>
+
+                        <Button Content="Remove Selected Tunnel"
+                                HorizontalAlignment="Left"
+                                Background="#3C3C3C"
+                                Foreground="{DynamicResource Dlg.Foreground}"
+                                BorderBrush="{DynamicResource Dlg.Input.Border}"
+                                Padding="12,5"
+                                FontSize="12"
+                                Click="BtnRemovePortForward_Click"/>
 
                     </StackPanel>
                 </ScrollViewer>
@@ -568,9 +686,11 @@
                               Background="{DynamicResource Dlg.Background}">
                     <StackPanel Margin="20,16">
 
+                        <TextBlock Text="HTTP / SOCKS PROXY" Style="{StaticResource SectionHeader}"/>
+
                         <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="12"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="12"/>
@@ -590,7 +710,7 @@
                             <TextBox  x:Name="TxtProxyPort" Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldInput}"/>
                         </Grid>
 
-                        <Grid>
+                        <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="12"/>
@@ -608,15 +728,115 @@
                             <PasswordBox x:Name="PwdProxyPassword" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldPassword}"/>
                         </Grid>
 
+                        <Separator/>
+
+                        <TextBlock Text="SSH JUMP HOST (USED WHEN PROXY TYPE IS SSHJUMPHOST)" Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Jump Hostname / IP" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Port" Style="{StaticResource FieldLabel}"/>
+
+                            <TextBox x:Name="TxtJumpHostName" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <TextBox x:Name="TxtJumpHostPort" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}" Text="22"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Jump Host Username" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Grid.Column="2" Grid.Row="0" Text="Jump Host Password" Style="{StaticResource FieldLabel}"/>
+
+                            <TextBox     x:Name="TxtJumpHostUsername" Grid.Column="0" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            <PasswordBox x:Name="PwdJumpHostPassword" Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldPassword}"/>
+                        </Grid>
+
+                        <StackPanel>
+                            <TextBlock Text="Jump Host Private Key File (optional)" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="TxtJumpHostKeyPath" Style="{StaticResource FieldInput}"/>
+                        </StackPanel>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <!-- ════ 8. Advanced tab (Sprint 3.6 + Recording) ══════════════ -->
+            <!-- ════ 8. Advanced tab (Sprint 3.6 + 5.6 + Recording) ═════════ -->
             <TabItem Header="Advanced">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               Background="{DynamicResource Dlg.Background}">
                     <StackPanel Margin="20,16">
+
+                        <!-- SSH Advanced section (Sprint 5.6) -->
+                        <StackPanel x:Name="PanelSshAdvanced">
+                            <TextBlock Text="SSH KEEP-ALIVE &amp; POST-CONNECT" Style="{StaticResource SectionHeader}"/>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="130"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <CheckBox x:Name="ChkSendKeepalive"
+                                          Grid.Column="0" Grid.Row="1"
+                                          VerticalAlignment="Center"
+                                          Content="Send keep-alive packets"
+                                          Style="{StaticResource FieldCheck}"
+                                          Margin="0"/>
+
+                                <TextBlock Grid.Column="2" Grid.Row="0" Text="Keep-alive (sec)" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Grid.Column="4" Grid.Row="0" Text="Timeout (sec)" Style="{StaticResource FieldLabel}"/>
+
+                                <TextBox x:Name="TxtKeepalive"         Grid.Column="2" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                                <TextBox x:Name="TxtSshConnectTimeout" Grid.Column="4" Grid.Row="1" Style="{StaticResource FieldInput}"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox x:Name="ChkCompression"
+                                          Grid.Column="0"
+                                          Content="Enable zlib compression"
+                                          Style="{StaticResource FieldCheck}"/>
+                                <CheckBox x:Name="ChkSshAutoReconnect"
+                                          Grid.Column="2"
+                                          Content="Auto-reconnect on connection drop"
+                                          Style="{StaticResource FieldCheck}"/>
+                            </Grid>
+
+                            <StackPanel Margin="0,0,0,10">
+                                <TextBlock Text="Post-Connect Startup Command" Style="{StaticResource FieldLabel}"/>
+                                <TextBox x:Name="TxtStartupCommand" Style="{StaticResource FieldInput}"/>
+                            </StackPanel>
+
+                            <Separator/>
+                        </StackPanel>
 
                         <!-- RDP Advanced section -->
                         <StackPanel x:Name="PanelRdpAdvanced">

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LiteConnect.Core\LiteConnect.Core.csproj" />
+    <ProjectReference Include="..\LiteConnect.Terminal\LiteConnect.Terminal.csproj" />
   </ItemGroup>
 
   <ItemGroup>

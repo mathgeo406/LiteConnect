@@ -67,15 +67,68 @@ public class ConnectionInfo
 /// <summary>SSH-specific connection settings. All fields nullable — null = global default.</summary>
 public sealed class SshConnectionSettings
 {
+    // ── Authentication ──────────────────────────────────────────────────────────
+    public string? AuthMethod { get; set; }        // "Password", "PrivateKey", "KeyAndPassword", "Agent", "KeyboardInteractive"
+    public bool? AgentForwarding { get; set; }
+
+    // ── Terminal ────────────────────────────────────────────────────────────────
     public string? TerminalType { get; set; }      // e.g. "xterm-256color"
-    public string? Encoding { get; set; }           // e.g. "UTF-8"
-    public int? ScrollbackLines { get; set; }
-    public bool? Compression { get; set; }
+    public string? Encoding { get; set; }          // e.g. "UTF-8"
+    public int? Columns { get; set; }              // null/0 = Auto fit to tab
+    public int? Rows { get; set; }                 // null/0 = Auto fit to tab
+    public int? ScrollbackLines { get; set; }      // default 10,000
+    public string? FontFamily { get; set; }        // default "Cascadia Mono"
+    public int? FontSize { get; set; }             // default 12
+    public string? ColorScheme { get; set; }       // "Default Dark", "Campbell", "Solarized Dark", "Dracula", "Monokai"
+    public string? BellAction { get; set; }        // "Visual", "Sound", "None"
+    public string? CursorStyle { get; set; }       // "Block", "Underline", "Bar"
+    public bool? CursorBlink { get; set; }
+
+    // ── Tunneling (Port Forwarding) ─────────────────────────────────────────────
+    public List<PortForwardRule>? PortForwards { get; set; }
+
+    // ── Keep-alive & Post-connect ───────────────────────────────────────────────
+    public bool? SendKeepalive { get; set; }
     public int? KeepaliveIntervalSeconds { get; set; }
-    public int? ConnectTimeoutSeconds { get; set; }
+    public bool? TcpKeepalive { get; set; }
+    public string? StartupCommand { get; set; }
+    public string? ExpectScript { get; set; }
+
+    // ── Advanced ────────────────────────────────────────────────────────────────
+    public bool? Compression { get; set; }
     public string? PreferredCiphers { get; set; }
     public string? PreferredMacs { get; set; }
+    public string? PreferredKeyExchange { get; set; }
     public string? PreferredHostKeyAlgorithms { get; set; }
+    public int? ConnectTimeoutSeconds { get; set; }
+    public bool? AutoReconnect { get; set; }
+    public int? MaxReconnectAttempts { get; set; }
+    public int? ReconnectIntervalSeconds { get; set; }
+}
+
+public enum PortForwardType
+{
+    Local,
+    Remote,
+    Dynamic
+}
+
+/// <summary>Represents a single SSH port-forwarding tunnel rule (Local, Remote, or Dynamic SOCKS).</summary>
+public sealed class PortForwardRule
+{
+    public PortForwardType Type { get; set; } = PortForwardType.Local;
+    public string BindAddress { get; set; } = "127.0.0.1";
+    public int BoundPort { get; set; }
+    public string TargetHost { get; set; } = "localhost";
+    public int TargetPort { get; set; }
+    public bool Enabled { get; set; } = true;
+
+    public string Summary => Type switch
+    {
+        PortForwardType.Dynamic => $"D {BindAddress}:{BoundPort} (SOCKS)",
+        PortForwardType.Remote  => $"R {BindAddress}:{BoundPort} → {TargetHost}:{TargetPort}",
+        _                       => $"L {BindAddress}:{BoundPort} → {TargetHost}:{TargetPort}"
+    };
 }
 
 /// <summary>RDP-specific connection settings. All fields nullable — null = global default.</summary>
@@ -151,9 +204,11 @@ public sealed class ProxySettings
     public string? Username { get; set; }
     public string? Password { get; set; }
 
-    // SSH jump-host fields (used when Type == JumpHost)
+    // SSH jump-host fields (used when Type == SshJumpHost)
     public string? JumpHostName { get; set; }
     public int? JumpHostPort { get; set; }
     public string? JumpHostUsername { get; set; }
+    public string? JumpHostPassword { get; set; }
     public string? JumpHostPrivateKeyPath { get; set; }
+    public string? JumpHostKeyPassphrase { get; set; }
 }
