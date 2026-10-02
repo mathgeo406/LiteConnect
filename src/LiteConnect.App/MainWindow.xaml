@@ -179,10 +179,10 @@
         <!-- ── Menu bar ──────────────────────────────────────────────────── -->
         <Menu DockPanel.Dock="Top"
               Background="{DynamicResource Shell.Panel.Background}"
-              Foreground="{DynamicResource Shell.Foreground}"
               BorderBrush="{DynamicResource Shell.Border}"
-              BorderThickness="0,0,0,1">
-            <MenuItem Header="_File" Foreground="{DynamicResource Shell.Foreground}">
+              BorderThickness="0,0,0,1"
+              Padding="2,1">
+            <MenuItem Header="_File">
                 <MenuItem Header="New _Connection…"
                           InputGestureText="Ctrl+N"
                           Command="{Binding TreeViewModel.NewConnectionCommand}"/>
@@ -196,11 +196,11 @@
                 <Separator/>
                 <MenuItem Header="E_xit" InputGestureText="Alt+F4" Click="MenuItem_Exit_Click"/>
             </MenuItem>
-            <MenuItem Header="_Edit" Foreground="{DynamicResource Shell.Foreground}">
+            <MenuItem Header="_Edit">
                 <MenuItem Header="_Find…" InputGestureText="Ctrl+F" Click="MenuItem_Find_Click"/>
                 <MenuItem Header="_Quick Connect" InputGestureText="Ctrl+T" Click="MenuItem_QuickConnect_Click"/>
             </MenuItem>
-            <MenuItem Header="_View" Foreground="{DynamicResource Shell.Foreground}">
+            <MenuItem Header="_View">
                 <MenuItem Header="Connection _Tree"
                           IsCheckable="True"
                           IsChecked="{Binding IsTreePanelVisible, Mode=TwoWay}"/>
@@ -208,14 +208,14 @@
                           IsCheckable="True"
                           IsChecked="{Binding IsStatusBarVisible, Mode=TwoWay}"/>
             </MenuItem>
-            <MenuItem Header="_Tools" Foreground="{DynamicResource Shell.Foreground}">
+            <MenuItem Header="_Tools">
                 <MenuItem Header="_Security &amp; Encryption…"
                           Command="{Binding OpenSecuritySettingsCommand}"/>
                 <MenuItem Header="_Settings…"
                           InputGestureText="Ctrl+,"
                           Command="{Binding OpenSecuritySettingsCommand}"/>
             </MenuItem>
-            <MenuItem Header="_Help" Foreground="{DynamicResource Shell.Foreground}">
+            <MenuItem Header="_Help">
                 <MenuItem Header="_About LiteConnect…" Click="MenuItem_About_Click"/>
             </MenuItem>
         </Menu>

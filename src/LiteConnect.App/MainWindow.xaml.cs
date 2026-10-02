@@ -26,6 +26,12 @@ public partial class MainWindow : Window
         DataContext = viewModel;
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        App.ApplyTitleBarTheme(this);
+    }
+
     // ── Global keyboard shortcuts for focus (Ctrl+T, Ctrl+F) ────────────────────
 
     protected override void OnPreviewKeyDown(System.Windows.Input.KeyEventArgs e)
