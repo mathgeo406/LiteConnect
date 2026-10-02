@@ -13,6 +13,8 @@ namespace LiteConnect.Core.Serialization;
 [JsonSerializable(typeof(RdpConnectionSettings))]
 [JsonSerializable(typeof(VncConnectionSettings))]
 [JsonSerializable(typeof(ProxySettings))]
+[JsonSerializable(typeof(PortForwardRule))]
+[JsonSerializable(typeof(List<PortForwardRule>))]
 [JsonSerializable(typeof(SecurityMetadata))]
 [JsonSourceGenerationOptions(
     WriteIndented = false,

@@ -44,6 +44,7 @@ public partial class App : WpfApplication
                     services.AddSingleton<SqlCipherCredentialStore>();
                     services.AddSingleton<ICredentialStore>(sp => sp.GetRequiredService<SqlCipherCredentialStore>());
                     services.AddSingleton<IConnectionRepository, LiteConnect.Core.Data.SqliteConnectionRepository>();
+                    services.AddSingleton<IKnownHostsStore, LiteConnect.Core.Data.SqliteKnownHostsStore>();
                     services.AddSingleton<LiteConnect.Core.Data.DatabaseInitializer>();
 
                     // ── App services ─────────────────────────────────────────────
@@ -58,6 +59,7 @@ public partial class App : WpfApplication
 
                     // ── Protocol sessions ────────────────────────────────────────
                     services.AddTransient<LiteConnect.Protocols.Rdp.RdpSession>();
+                    services.AddTransient<LiteConnect.Protocols.Ssh.SshSession>();
                 })
                 .Build();
 

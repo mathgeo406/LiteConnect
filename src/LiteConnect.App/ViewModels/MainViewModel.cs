@@ -6,6 +6,7 @@ using LiteConnect.Core.Abstractions;
 using LiteConnect.Core.Models;
 using LiteConnect.Core.Services;
 using LiteConnect.Protocols.Rdp;
+using LiteConnect.Protocols.Ssh;
 
 namespace LiteConnect.App.ViewModels;
 
@@ -17,6 +18,7 @@ public sealed partial class MainViewModel : ObservableObject
 {
     private readonly IConnectionRepository _repository;
     private readonly ICredentialStore _credentialStore;
+    private readonly IKnownHostsStore? _knownHostsStore;
 
     // ── Sub-ViewModels ──────────────────────────────────────────────────────────
 
@@ -26,11 +28,13 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(
         ConnectionTreeViewModel treeViewModel,
         IConnectionRepository repository,
-        ICredentialStore credentialStore)
+        ICredentialStore credentialStore,
+        IKnownHostsStore? knownHostsStore = null)
     {
         TreeViewModel    = treeViewModel;
         _repository      = repository;
         _credentialStore = credentialStore;
+        _knownHostsStore = knownHostsStore;
 
         TreeViewModel.ConnectionOpenRequested += (_, conn) => _ = OpenSessionAsync(conn);
     }
@@ -95,13 +99,23 @@ public sealed partial class MainViewModel : ObservableObject
         var input = QuickConnectHost.Trim();
         if (string.IsNullOrEmpty(input)) return;
 
-        string hostname = input;
+        string? username = null;
+        string hostPart  = input;
+
+        int atIdx = hostPart.IndexOf('@');
+        if (atIdx > 0 && atIdx < hostPart.Length - 1)
+        {
+            username = hostPart[..atIdx];
+            hostPart = hostPart[(atIdx + 1)..];
+        }
+
+        string hostname = hostPart;
         int? port = null;
 
-        int colonIdx = input.LastIndexOf(':');
-        if (colonIdx > 0 && int.TryParse(input[(colonIdx + 1)..], out int parsedPort))
+        int colonIdx = hostPart.LastIndexOf(':');
+        if (colonIdx > 0 && int.TryParse(hostPart[(colonIdx + 1)..], out int parsedPort))
         {
-            hostname = input[..colonIdx];
+            hostname = hostPart[..colonIdx];
             port     = parsedPort;
         }
 
@@ -114,6 +128,7 @@ public sealed partial class MainViewModel : ObservableObject
             Name     = hostname,
             Hostname = hostname,
             Port     = port,
+            Username = username,
             Protocol = protocol
         };
 
@@ -135,7 +150,7 @@ public sealed partial class MainViewModel : ObservableObject
         dlg.ShowDialog();
     }
 
-    // ── Session factory / tab launcher (Sprint 3.5 & 4.7) ───────────────────────
+    // ── Session factory / tab launcher (Sprint 3.5, 4.7, 5.1) ───────────────────
 
     /// <summary>
     /// Resolves effective credentials (Connection → Group → Global) and opens a protocol session tab.
@@ -154,9 +169,16 @@ public sealed partial class MainViewModel : ObservableObject
             AddTab(rdpVm);
             await rdpVm.ConnectAsync();
         }
+        else if (effectiveConnection.Protocol == ProtocolType.SSH)
+        {
+            var sshSession = new SshSession(_knownHostsStore);
+            var sshVm      = new SshSessionViewModel(sshSession, effectiveConnection, CloseTabCommand, _repository);
+            AddTab(sshVm);
+            await sshVm.ConnectAsync();
+        }
         else
         {
-            // SSH (Sprint 5) and VNC (Sprint 8) use PlaceholderTabViewModel for now
+            // VNC (Sprint 8) uses PlaceholderTabViewModel for now
             var placeholder = new PlaceholderTabViewModel(effectiveConnection, CloseTabCommand);
             AddTab(placeholder);
         }

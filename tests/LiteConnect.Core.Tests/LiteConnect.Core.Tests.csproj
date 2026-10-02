@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\LiteConnect.Core\LiteConnect.Core.csproj" />
+    <ProjectReference Include="..\..\src\LiteConnect.Terminal\LiteConnect.Terminal.csproj" />
   </ItemGroup>
 
   <ItemGroup>
