@@ -9,7 +9,8 @@ namespace LiteConnect.App.ViewModels;
 /// </summary>
 public sealed partial class PlaceholderTabViewModel : ObservableObject, ISessionTabViewModel
 {
-    public string DisplayName { get; }
+    [ObservableProperty]
+    private string _displayName;
 
     public string StatusIcon => "🟡";
 
@@ -27,7 +28,7 @@ public sealed partial class PlaceholderTabViewModel : ObservableObject, ISession
 
     public PlaceholderTabViewModel(ConnectionInfo connection, IRelayCommand closeTabCommand)
     {
-        DisplayName  = $"{connection.Protocol} — {(string.IsNullOrWhiteSpace(connection.Name) ? connection.Hostname : connection.Name)}";
+        _displayName = $"{connection.Protocol} — {(string.IsNullOrWhiteSpace(connection.Name) ? connection.Hostname : connection.Name)}";
         CloseCommand = new RelayCommand(() => closeTabCommand.Execute(this));
     }
 

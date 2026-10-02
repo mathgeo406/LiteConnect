@@ -47,6 +47,9 @@ public partial class App : WpfApplication
                     services.AddSingleton<IKnownHostsStore, LiteConnect.Core.Data.SqliteKnownHostsStore>();
                     services.AddSingleton<ISessionRecorderFactory, LiteConnect.Core.Recording.SessionRecorderFactory>();
                     services.AddTransient<ISessionRecorder, LiteConnect.Core.Recording.FileSessionRecorder>();
+                    services.AddSingleton<LiteConnect.Core.ImportExport.ConnectionExportImportService>();
+                    services.AddSingleton<IExportService>(sp => sp.GetRequiredService<LiteConnect.Core.ImportExport.ConnectionExportImportService>());
+                    services.AddSingleton<IImportService>(sp => sp.GetRequiredService<LiteConnect.Core.ImportExport.ConnectionExportImportService>());
                     services.AddSingleton<LiteConnect.Core.Data.DatabaseInitializer>();
 
                     // ── App services ─────────────────────────────────────────────
@@ -67,9 +70,41 @@ public partial class App : WpfApplication
 
             await _host.StartAsync();
 
-            // ── Initialize Credential Vault (Sprint 4.1, 4.2, 4.3) ───────────────
+            // ── Initialize Credential Vault (Sprint 4.1, 4.2, 4.3, 8.3) ──────────
             var credentialStore = _host.Services.GetRequiredService<SqlCipherCredentialStore>();
-            bool unlocked = await credentialStore.InitializeAsync();
+            var appEnvironment  = _host.Services.GetRequiredService<IAppEnvironment>();
+            bool unlocked;
+            try
+            {
+                unlocked = await credentialStore.InitializeAsync();
+            }
+            catch (Exception dbEx)
+            {
+                var choice = System.Windows.MessageBox.Show(
+                    $"The connection database appears to be corrupted or unreadable:\n\n{dbEx.Message}\n\n" +
+                    "Would you like to back up the damaged database and create a new one?",
+                    "Database Recovery",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Warning);
+
+                if (choice != System.Windows.MessageBoxResult.Yes)
+                {
+                    Shutdown(1);
+                    return;
+                }
+
+                if (System.IO.File.Exists(appEnvironment.DatabasePath))
+                {
+                    string backupPath = $"{appEnvironment.DatabasePath}.corrupt.{DateTime.Now:yyyyMMdd_HHmmss}";
+                    System.IO.File.Move(appEnvironment.DatabasePath, backupPath, overwrite: true);
+                }
+                if (System.IO.File.Exists(appEnvironment.DpapiKeyPath))
+                {
+                    System.IO.File.Delete(appEnvironment.DpapiKeyPath);
+                }
+
+                unlocked = await credentialStore.InitializeAsync();
+            }
 
             if (!unlocked)
             {

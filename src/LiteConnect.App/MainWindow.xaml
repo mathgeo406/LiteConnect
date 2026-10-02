@@ -13,6 +13,20 @@
 
     <Window.InputBindings>
         <KeyBinding Modifiers="Ctrl+Shift" Key="R" Command="{Binding ToggleActiveTabRecordingCommand}"/>
+        <KeyBinding Modifiers="Ctrl" Key="N" Command="{Binding TreeViewModel.NewConnectionCommand}"/>
+        <KeyBinding Modifiers="Ctrl" Key="W" Command="{Binding CloseActiveTabCommand}"/>
+        <KeyBinding Modifiers="Ctrl" Key="F4" Command="{Binding CloseActiveTabCommand}"/>
+        <KeyBinding Modifiers="Ctrl" Key="Tab" Command="{Binding NextTabCommand}"/>
+        <KeyBinding Modifiers="Ctrl+Shift" Key="Tab" Command="{Binding PreviousTabCommand}"/>
+        <KeyBinding Modifiers="Ctrl" Key="D1" Command="{Binding SelectTabByIndexCommand}" CommandParameter="1"/>
+        <KeyBinding Modifiers="Ctrl" Key="D2" Command="{Binding SelectTabByIndexCommand}" CommandParameter="2"/>
+        <KeyBinding Modifiers="Ctrl" Key="D3" Command="{Binding SelectTabByIndexCommand}" CommandParameter="3"/>
+        <KeyBinding Modifiers="Ctrl" Key="D4" Command="{Binding SelectTabByIndexCommand}" CommandParameter="4"/>
+        <KeyBinding Modifiers="Ctrl" Key="D5" Command="{Binding SelectTabByIndexCommand}" CommandParameter="5"/>
+        <KeyBinding Modifiers="Ctrl" Key="D6" Command="{Binding SelectTabByIndexCommand}" CommandParameter="6"/>
+        <KeyBinding Modifiers="Ctrl" Key="D7" Command="{Binding SelectTabByIndexCommand}" CommandParameter="7"/>
+        <KeyBinding Modifiers="Ctrl" Key="D8" Command="{Binding SelectTabByIndexCommand}" CommandParameter="8"/>
+        <KeyBinding Modifiers="Ctrl" Key="D9" Command="{Binding SelectTabByIndexCommand}" CommandParameter="9"/>
     </Window.InputBindings>
 
     <Window.Resources>
@@ -53,6 +67,12 @@
 
         <!-- ── Closable tab header ───────────────────────────────────────── -->
         <Style x:Key="ClosableTabItemStyle" TargetType="TabItem">
+            <Setter Property="AllowDrop" Value="True"/>
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TabItem_PreviewMouseLeftButtonDown"/>
+            <EventSetter Event="MouseMove" Handler="TabItem_MouseMove"/>
+            <EventSetter Event="Drop" Handler="TabItem_Drop"/>
+            <EventSetter Event="MouseDown" Handler="TabItem_MouseDown"/>
+            <EventSetter Event="MouseDoubleClick" Handler="TabItem_MouseDoubleClick"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
@@ -169,17 +189,24 @@
                 <MenuItem Header="New _Folder…"
                           Command="{Binding TreeViewModel.NewGroupCommand}"/>
                 <Separator/>
-                <MenuItem Header="_Import Connections…"/>
-                <MenuItem Header="_Export Connections…"/>
+                <MenuItem Header="_Import Connections…"
+                          Command="{Binding ImportConnectionsCommand}"/>
+                <MenuItem Header="_Export Connections…"
+                          Command="{Binding ExportConnectionsCommand}"/>
                 <Separator/>
                 <MenuItem Header="E_xit" InputGestureText="Alt+F4" Click="MenuItem_Exit_Click"/>
             </MenuItem>
             <MenuItem Header="_Edit" Foreground="{DynamicResource Shell.Foreground}">
-                <MenuItem Header="_Find…"             InputGestureText="Ctrl+F"/>
+                <MenuItem Header="_Find…" InputGestureText="Ctrl+F" Click="MenuItem_Find_Click"/>
+                <MenuItem Header="_Quick Connect" InputGestureText="Ctrl+T" Click="MenuItem_QuickConnect_Click"/>
             </MenuItem>
             <MenuItem Header="_View" Foreground="{DynamicResource Shell.Foreground}">
-                <MenuItem Header="Connection _Tree"   IsCheckable="True" IsChecked="True"/>
-                <MenuItem Header="_Status Bar"        IsCheckable="True" IsChecked="True"/>
+                <MenuItem Header="Connection _Tree"
+                          IsCheckable="True"
+                          IsChecked="{Binding IsTreePanelVisible, Mode=TwoWay}"/>
+                <MenuItem Header="_Status Bar"
+                          IsCheckable="True"
+                          IsChecked="{Binding IsStatusBarVisible, Mode=TwoWay}"/>
             </MenuItem>
             <MenuItem Header="_Tools" Foreground="{DynamicResource Shell.Foreground}">
                 <MenuItem Header="_Security &amp; Encryption…"
@@ -189,7 +216,7 @@
                           Command="{Binding OpenSecuritySettingsCommand}"/>
             </MenuItem>
             <MenuItem Header="_Help" Foreground="{DynamicResource Shell.Foreground}">
-                <MenuItem Header="_About LiteConnect…"/>
+                <MenuItem Header="_About LiteConnect…" Click="MenuItem_About_Click"/>
             </MenuItem>
         </Menu>
 
@@ -252,27 +279,28 @@
                         </Style>
                     </Button.Style>
                 </Button>
-                <TextBox Text="{Binding QuickConnectHost, UpdateSourceTrigger=PropertyChanged}"
-                         Background="{DynamicResource Input.Background}"
-                         Foreground="{DynamicResource Shell.Foreground}"
-                         CaretBrush="{DynamicResource Shell.Foreground}"
-                         BorderBrush="{DynamicResource Input.Border}"
-                         BorderThickness="1"
-                         Padding="6,4"
-                         FontSize="12"
-                         VerticalContentAlignment="Center"
-                         MinWidth="200">
-                    <TextBox.InputBindings>
-                        <KeyBinding Key="Return" Command="{Binding QuickConnectCommand}"/>
-                    </TextBox.InputBindings>
-                </TextBox>
+                <ComboBox x:Name="CboQuickConnect"
+                          IsEditable="True"
+                          ItemsSource="{Binding RecentQuickConnections}"
+                          Text="{Binding QuickConnectHost, UpdateSourceTrigger=PropertyChanged}"
+                          Background="{DynamicResource Input.Background}"
+                          Foreground="{DynamicResource Shell.Foreground}"
+                          BorderBrush="{DynamicResource Input.Border}"
+                          BorderThickness="1"
+                          Padding="6,4"
+                          FontSize="12"
+                          VerticalContentAlignment="Center"
+                          MinWidth="240"
+                          ToolTip="Enter hostname, user@hostname, user@hostname:port, or ssh://user@host:port (Ctrl+T)"
+                          PreviewKeyDown="CboQuickConnect_PreviewKeyDown"/>
             </DockPanel>
         </Border>
 
         <!-- ── Status bar ─────────────────────────────────────────────────── -->
         <Border DockPanel.Dock="Bottom"
                 Background="{DynamicResource StatusBar.Background}"
-                Padding="8,2">
+                Padding="8,2"
+                Visibility="{Binding IsStatusBarVisible, Converter={StaticResource BoolToVisibility}}">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Right"
                            Foreground="White"
@@ -305,7 +333,7 @@
         <Grid>
             <Grid.ColumnDefinitions>
                 <!-- Connection tree panel -->
-                <ColumnDefinition Width="250" MinWidth="150" MaxWidth="600"/>
+                <ColumnDefinition Width="250" MinWidth="0" MaxWidth="600"/>
                 <!-- Resizable splitter -->
                 <ColumnDefinition Width="Auto"/>
                 <!-- Session tab area -->
@@ -317,6 +345,7 @@
                     Background="{DynamicResource Shell.Panel.Background}"
                     BorderBrush="{DynamicResource Shell.Border}"
                     BorderThickness="0,0,1,0"
+                    Visibility="{Binding IsTreePanelVisible, Converter={StaticResource BoolToVisibility}}"
                     DataContext="{Binding TreeViewModel}">
                 <DockPanel>
                     <!-- Tree panel toolbar -->
@@ -349,7 +378,8 @@
                             Padding="6,4"
                             BorderBrush="{DynamicResource Shell.Border}"
                             BorderThickness="0,0,0,1">
-                        <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox x:Name="TxtTreeSearch"
+                                 Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
                                  Background="{DynamicResource Input.Background}"
                                  Foreground="{DynamicResource Shell.Foreground}"
                                  CaretBrush="{DynamicResource Shell.Foreground}"

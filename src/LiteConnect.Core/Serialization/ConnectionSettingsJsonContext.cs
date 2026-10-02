@@ -1,11 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LiteConnect.Core.ImportExport;
 using LiteConnect.Core.Models;
 
 namespace LiteConnect.Core.Serialization;
 
 /// <summary>
-/// Source-generated JSON serialization context for connection settings types.
+/// Source-generated JSON serialization context for connection settings types and LCX export bundles.
 /// Configured with <see cref="JsonIgnoreCondition.WhenWritingNull"/> to keep
 /// stored JSON compact and compatible with future nullable-column additions.
 /// </summary>
@@ -16,6 +17,11 @@ namespace LiteConnect.Core.Serialization;
 [JsonSerializable(typeof(PortForwardRule))]
 [JsonSerializable(typeof(List<PortForwardRule>))]
 [JsonSerializable(typeof(SecurityMetadata))]
+[JsonSerializable(typeof(ConnectionInfo))]
+[JsonSerializable(typeof(LcxBundlePayload))]
+[JsonSerializable(typeof(LcxConnectionEntry))]
+[JsonSerializable(typeof(List<LcxConnectionEntry>))]
+[JsonSerializable(typeof(List<string>))]
 [JsonSourceGenerationOptions(
     WriteIndented = false,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
@@ -56,6 +62,10 @@ public static class ConnectionSettingsSerializer
                 => JsonSerializer.Serialize((ProxySettings)(object)obj, s_context.ProxySettings),
             Type t when t == typeof(SecurityMetadata)
                 => JsonSerializer.Serialize((SecurityMetadata)(object)obj, s_context.SecurityMetadata),
+            Type t when t == typeof(LcxBundlePayload)
+                => JsonSerializer.Serialize((LcxBundlePayload)(object)obj, s_context.LcxBundlePayload),
+            Type t when t == typeof(List<string>)
+                => JsonSerializer.Serialize((List<string>)(object)obj, s_context.ListString),
             _ => JsonSerializer.Serialize(obj, s_context.Options),
         };
     }
@@ -80,6 +90,10 @@ public static class ConnectionSettingsSerializer
                 => (T?)(object?)JsonSerializer.Deserialize(json, s_context.ProxySettings),
             Type t when t == typeof(SecurityMetadata)
                 => (T?)(object?)JsonSerializer.Deserialize(json, s_context.SecurityMetadata),
+            Type t when t == typeof(LcxBundlePayload)
+                => (T?)(object?)JsonSerializer.Deserialize(json, s_context.LcxBundlePayload),
+            Type t when t == typeof(List<string>)
+                => (T?)(object?)JsonSerializer.Deserialize(json, s_context.ListString),
             _ => JsonSerializer.Deserialize<T>(json, s_context.Options),
         };
     }

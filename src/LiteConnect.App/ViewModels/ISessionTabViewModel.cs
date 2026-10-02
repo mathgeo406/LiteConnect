@@ -10,7 +10,7 @@ namespace LiteConnect.App.ViewModels;
 public interface ISessionTabViewModel : IDisposable
 {
     /// <summary>Text shown in the tab header.</summary>
-    string DisplayName { get; }
+    string DisplayName { get; set; }
 
     /// <summary>Status icon shown in the tab header (🟢 connected / 🔴 disconnected / 🟡 connecting).</summary>
     string StatusIcon { get; }
