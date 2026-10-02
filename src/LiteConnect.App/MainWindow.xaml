@@ -34,16 +34,16 @@
         <SolidColorBrush x:Key="Shell.Background"          Color="#1E1E1E"/>
         <SolidColorBrush x:Key="Shell.Panel.Background"    Color="#252526"/>
         <SolidColorBrush x:Key="Shell.Border"              Color="#3C3C3C"/>
-        <SolidColorBrush x:Key="Shell.Foreground"          Color="#D4D4D4"/>
-        <SolidColorBrush x:Key="Shell.Foreground.Muted"    Color="#858585"/>
+        <SolidColorBrush x:Key="Shell.Foreground"          Color="#F0F0F0"/>
+        <SolidColorBrush x:Key="Shell.Foreground.Muted"    Color="#B8B8B8"/>
         <SolidColorBrush x:Key="Shell.Accent"              Color="#007ACC"/>
         <SolidColorBrush x:Key="Shell.Accent.Hover"        Color="#1C97EA"/>
         <SolidColorBrush x:Key="Tab.Header.Background"     Color="#2D2D2D"/>
         <SolidColorBrush x:Key="Tab.Header.Active"         Color="#1E1E1E"/>
         <SolidColorBrush x:Key="Tab.Header.Hover"          Color="#3E3E3E"/>
         <SolidColorBrush x:Key="StatusBar.Background"      Color="#007ACC"/>
-        <SolidColorBrush x:Key="Toolbar.Background"        Color="#3C3C3C"/>
-        <SolidColorBrush x:Key="Input.Background"          Color="#3C3C3C"/>
+        <SolidColorBrush x:Key="Toolbar.Background"        Color="#2D2D30"/>
+        <SolidColorBrush x:Key="Input.Background"          Color="#1E1E1E"/>
         <SolidColorBrush x:Key="Input.Border"              Color="#555555"/>
 
         <!-- ── Converters ────────────────────────────────────────────────── -->
@@ -51,7 +51,7 @@
         <conv:InverseBoolConverter      x:Key="InverseBool"/>
 
         <!-- ── Menu / toolbar button style ───────────────────────────────── -->
-        <Style x:Key="ToolbarButtonStyle" TargetType="Button">
+        <Style x:Key="ToolbarButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background"   Value="Transparent"/>
             <Setter Property="Foreground"   Value="{DynamicResource Shell.Foreground}"/>
             <Setter Property="BorderBrush"  Value="Transparent"/>
