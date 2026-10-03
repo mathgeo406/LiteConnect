@@ -229,7 +229,7 @@ public sealed class TerminalControl : FrameworkElement
             Brushes.White,
             _pixelsPerDip);
 
-        _cellWidth  = Math.Max(4.0, Math.Ceiling(sample.WidthIncludingTrailingWhitespace));
+        _cellWidth  = Math.Max(4.0, sample.WidthIncludingTrailingWhitespace);
         _cellHeight = Math.Max(8.0, Math.Ceiling(sample.Height));
     }
 
