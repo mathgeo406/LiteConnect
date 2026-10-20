@@ -21,6 +21,7 @@ public sealed class RdpSession : IProtocolSession
     private int _reconnectAttempts;
     private bool _userInitiatedDisconnect;
     private bool _disposed;
+    private bool _nlaRetryPending;
 
     public Guid SessionId { get; } = Guid.NewGuid();
 
@@ -125,6 +126,13 @@ public sealed class RdpSession : IProtocolSession
             State = SessionState.Connecting;
 
             ApplyConnectionSettings(_rdpClient!, connectionInfo);
+
+            // Enable NLA fallback retry: if the first Connect fires an immediate
+            // disconnect (reason 1/4), OnAxDisconnected will retry with CredSSP off.
+            var rdpSettings = connectionInfo.RdpSettings ?? new RdpConnectionSettings();
+            bool useNla = rdpSettings.UseNla ?? true;
+            _nlaRetryPending = useNla;
+
             _rdpClient!.Connect();
 
             return Task.CompletedTask;
@@ -234,6 +242,18 @@ public sealed class RdpSession : IProtocolSession
     {
         if (_disposed) return;
 
+        // NLA/CredSSP fallback: if we get an immediate disconnect with reason 1 or 4
+        // ("An internal error has occurred") and haven't retried yet, retry once
+        // with CredSSP disabled and AuthenticationLevel=0 for non-NLA servers (e.g. xrdp).
+        if (!_userInitiatedDisconnect && _nlaRetryPending && discReason is 1 or 4 &&
+            _rdpClient is not null && _lastConnectionInfo is not null)
+        {
+            _nlaRetryPending = false;
+            _ = ScheduleNlaFallbackRetryAsync();
+            return;
+        }
+        _nlaRetryPending = false;
+
         string reason = DescribeDisconnectReason(discReason);
         LastDisconnectReason = reason;
 
@@ -307,6 +327,35 @@ public sealed class RdpSession : IProtocolSession
         catch (Exception ex)
         {
             LastDisconnectReason = $"Auto-reconnect failed: {ex.Message}";
+            State                = SessionState.Error;
+            RaiseNotification(LastDisconnectReason, NotificationSeverity.Error);
+        }
+    }
+
+    private async Task ScheduleNlaFallbackRetryAsync()
+    {
+        try
+        {
+            // Brief delay to let the ActiveX control fully settle after disconnect
+            await Task.Delay(150);
+            if (_disposed || _rdpClient is null || _lastConnectionInfo is null)
+                return;
+
+            RaiseNotification(
+                "NLA/CredSSP negotiation failed. Retrying without NLA…",
+                NotificationSeverity.Warning);
+
+            // Re-apply settings with CredSSP disabled
+            ApplyConnectionSettings(_rdpClient, _lastConnectionInfo);
+            var adv = _rdpClient.AdvancedSettings;
+            adv.EnableCredSspSupport = false;
+            adv.AuthenticationLevel  = 0u;
+
+            _rdpClient.Connect();
+        }
+        catch (Exception ex)
+        {
+            LastDisconnectReason = $"NLA fallback retry failed: {ex.Message}";
             State                = SessionState.Error;
             RaiseNotification(LastDisconnectReason, NotificationSeverity.Error);
         }

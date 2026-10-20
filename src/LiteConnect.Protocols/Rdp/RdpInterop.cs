@@ -74,20 +74,38 @@ public static class RdpGatewayConstants
 }
 
 /// <summary>
-/// Hosts the Windows built-in RDP ActiveX control (<c>MsRdpClient9NotSafeForScripting</c>)
-/// via <see cref="AxHost"/> without requiring design-time <c>&lt;COMReference&gt;</c> generation,
-/// enabling clean CLI builds on both x64 and ARM64 Windows.
+/// Hosts the Windows built-in RDP ActiveX control via <see cref="AxHost"/> without
+/// requiring design-time <c>&lt;COMReference&gt;</c> generation, enabling clean CLI
+/// builds on both x64 and ARM64 Windows.
 /// </summary>
+/// <remarks>
+/// Uses <c>MsTscAx.MsTscAx.*</c> (SafeForScripting) CLSIDs which are the controls
+/// that <c>mstsc.exe</c> uses and that work reliably when hosted in WPF/WinForms
+/// applications. The legacy <c>MsRDP.MsRDP.*</c> (NotSafeForScripting) CLSIDs
+/// immediately fire <c>OnDisconnected(1)</c> on modern Windows 10/11 when hosted
+/// outside Internet Explorer.
+/// </remarks>
 public sealed class AxMsRdpClient9NotSafeForScripting : AxHost
 {
-    /// <summary>CLSID for <c>MsRdpClient9NotSafeForScripting</c> (MsRDP.MsRDP.9).</summary>
-    public const string ClsidNotSafeForScripting9 = "301B94BA-5D25-4A12-BFFE-3B6E7A616585";
+    // -- MsTscAx (SafeForScripting) CLSIDs -- preferred for custom hosting --------
+    /// <summary>CLSID for <c>MsTscAx.MsTscAx.13</c> (Windows 11 24H2+).</summary>
+    public const string ClsidMsTscAx13 = "3F859AA3-C2D4-4FAA-B0E4-FD0C9C4E5E3A";
 
-    /// <summary>CLSID for <c>MsRdpClient9</c> (MsTscAx.MsTscAx.9).</summary>
+    /// <summary>CLSID for <c>MsTscAx.MsTscAx.12</c> (Windows 11 22H2+).</summary>
+    public const string ClsidMsTscAx12 = "1DF7C823-B2D4-4B54-975A-F2AC5D7CF8B8";
+
+    /// <summary>CLSID for <c>MsTscAx.MsTscAx.11</c> (Windows 10 1903+).</summary>
+    public const string ClsidMsTscAx11 = "A0C63C30-F08D-4AB4-907C-34905D770C7D";
+
+    /// <summary>CLSID for <c>MsTscAx.MsTscAx.10</c> (Windows 10 1709+).</summary>
+    public const string ClsidMsTscAx10 = "8B918B82-7985-4C24-89DF-C33AD2BBFBCD";
+
+    /// <summary>CLSID for <c>MsTscAx.MsTscAx.9</c> (Windows 8.1+).</summary>
     public const string ClsidMsTscAx9 = "A3BC03A0-041D-42E3-AD22-882B7865C9C5";
 
-    /// <summary>CLSID for <c>MsRdpClient10</c> (MsTscAx.MsTscAx.10).</summary>
-    public const string ClsidMsTscAx10 = "8B918B82-7985-4C24-89DF-C33AD2BBFBCD";
+    // -- MsRDP (NotSafeForScripting) CLSIDs -- kept as fallback constants ----------
+    /// <summary>CLSID for <c>MsRDP.MsRDP.9</c> (legacy NotSafeForScripting).</summary>
+    public const string ClsidNotSafeForScripting9 = "301B94BA-5D25-4A12-BFFE-3B6E7A616585";
 
     private ConnectionPointCookie? _cookie;
     private RdpAxEventSink? _eventSink;
@@ -99,14 +117,21 @@ public sealed class AxMsRdpClient9NotSafeForScripting : AxHost
 
     /// <summary>
     /// Resolves the best available RDP ActiveX CLSID registered in <c>HKEY_CLASSES_ROOT\CLSID</c>.
+    /// Prefers <c>MsTscAx</c> (SafeForScripting) CLSIDs, newest version first.
     /// </summary>
     public static string ResolveInstalledClsid()
     {
+        // Prefer MsTscAx (SafeForScripting) CLSIDs -- these work reliably in custom hosts.
+        // The MsRDP.MsRDP.* (NotSafeForScripting) CLSIDs fire OnDisconnected(1) immediately
+        // on modern Windows 10/11 when hosted outside Internet Explorer.
         string[] candidates =
         [
-            ClsidNotSafeForScripting9,
+            ClsidMsTscAx13,
+            ClsidMsTscAx12,
+            ClsidMsTscAx11,
             ClsidMsTscAx10,
-            ClsidMsTscAx9
+            ClsidMsTscAx9,
+            ClsidNotSafeForScripting9  // last-resort fallback
         ];
 
         foreach (var clsid in candidates)
@@ -116,7 +141,7 @@ public sealed class AxMsRdpClient9NotSafeForScripting : AxHost
                 return clsid;
         }
 
-        return ClsidNotSafeForScripting9;
+        return ClsidMsTscAx9;
     }
 
     // ── ActiveX Events (3.4) ────────────────────────────────────────────────────

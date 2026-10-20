@@ -336,6 +336,34 @@ public sealed partial class MainViewModel : ObservableObject
             _repository,
             _credentialStore);
 
+        // Prompt for credentials if username or password is missing (Quick Connect, ad-hoc, etc.)
+        if (effectiveConnection.Protocol is ProtocolType.SSH or ProtocolType.RDP)
+        {
+            bool needsUsername = string.IsNullOrWhiteSpace(effectiveConnection.Username);
+            bool needsPassword = string.IsNullOrEmpty(effectiveConnection.Password)
+                && string.IsNullOrWhiteSpace(effectiveConnection.PrivateKeyPath);
+
+            if (needsUsername || needsPassword)
+            {
+                var dlg = new CredentialPromptDialog(
+                    effectiveConnection.Hostname,
+                    effectiveConnection.Protocol,
+                    effectiveConnection.Username,
+                    effectiveConnection.Domain);
+
+                if (System.Windows.Application.Current?.MainWindow is { } owner)
+                    dlg.Owner = owner;
+
+                if (dlg.ShowDialog() != true)
+                    return; // User cancelled
+
+                effectiveConnection.Username = dlg.Username;
+                effectiveConnection.Password = dlg.Password;
+                if (!string.IsNullOrWhiteSpace(dlg.Domain))
+                    effectiveConnection.Domain = dlg.Domain;
+            }
+        }
+
         if (effectiveConnection.Protocol == ProtocolType.RDP)
         {
             var rdpSession = new RdpSession();
