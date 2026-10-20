@@ -21,6 +21,7 @@ public sealed class RdpSession : IProtocolSession
     private int _reconnectAttempts;
     private bool _userInitiatedDisconnect;
     private bool _disposed;
+    private bool _nlaRetryPending;
 
     public Guid SessionId { get; } = Guid.NewGuid();
 
@@ -125,6 +126,13 @@ public sealed class RdpSession : IProtocolSession
             State = SessionState.Connecting;
 
             ApplyConnectionSettings(_rdpClient!, connectionInfo);
+
+            // Enable NLA fallback retry: if the first Connect fires an immediate
+            // disconnect (reason 1/4), OnAxDisconnected will retry with CredSSP off.
+            var rdpSettings = connectionInfo.RdpSettings ?? new RdpConnectionSettings();
+            bool useNla = rdpSettings.UseNla ?? true;
+            _nlaRetryPending = useNla;
+
             _rdpClient!.Connect();
 
             return Task.CompletedTask;
@@ -215,24 +223,53 @@ public sealed class RdpSession : IProtocolSession
         LastDisconnectReason = null;
         State                = SessionState.Connected;
 
-        // Apply custom DPI scaling if configured
-        var dpi = _lastConnectionInfo?.RdpSettings?.DpiScaling;
-        if (dpi is > 100 && _rdpClient is not null && _host is { ActualWidth: > 0, ActualHeight: > 0 })
+        // In Auto or dynamic mode, adjust remote desktop resolution to match container size on connect.
+        // Schedule after brief delay to allow WPF layout to measure the host container.
+        if (_rdpClient is not null)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                _rdpClient.UpdateSessionDisplaySettings(
-                    (uint)_host.ActualWidth,
-                    (uint)_host.ActualHeight,
-                    (uint)dpi.Value);
-            }
-            catch { /* Best effort if server supports dynamic display updates */ }
+                await Task.Delay(250);
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    if (_disposed || _rdpClient is null || State != SessionState.Connected)
+                        return;
+
+                    try
+                    {
+                        var rdpSettings = _lastConnectionInfo?.RdpSettings;
+                        string mode = rdpSettings?.ResolutionMode ?? "Auto";
+                        if (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase) &&
+                            _host is { ActualWidth: >= 200, ActualHeight: >= 200 })
+                        {
+                            uint scale = (uint)(rdpSettings?.DpiScaling is > 0 ? rdpSettings.DpiScaling.Value : 100);
+                            _rdpClient.UpdateSessionDisplaySettings(
+                                (uint)_host.ActualWidth,
+                                (uint)_host.ActualHeight,
+                                scale);
+                        }
+                    }
+                    catch { /* Best effort if server does not support dynamic resolution changes */ }
+                });
+            });
         }
     }
 
     private void OnAxDisconnected(object? sender, int discReason)
     {
         if (_disposed) return;
+
+        // NLA/CredSSP fallback: if we get an immediate disconnect with reason 1 or 4
+        // ("An internal error has occurred") and haven't retried yet, retry once
+        // with CredSSP disabled and AuthenticationLevel=0 for non-NLA servers (e.g. xrdp).
+        if (!_userInitiatedDisconnect && _nlaRetryPending && discReason is 1 or 4 &&
+            _rdpClient is not null && _lastConnectionInfo is not null)
+        {
+            _nlaRetryPending = false;
+            _ = ScheduleNlaFallbackRetryAsync();
+            return;
+        }
+        _nlaRetryPending = false;
 
         string reason = DescribeDisconnectReason(discReason);
         LastDisconnectReason = reason;
@@ -307,6 +344,35 @@ public sealed class RdpSession : IProtocolSession
         catch (Exception ex)
         {
             LastDisconnectReason = $"Auto-reconnect failed: {ex.Message}";
+            State                = SessionState.Error;
+            RaiseNotification(LastDisconnectReason, NotificationSeverity.Error);
+        }
+    }
+
+    private async Task ScheduleNlaFallbackRetryAsync()
+    {
+        try
+        {
+            // Brief delay to let the ActiveX control fully settle after disconnect
+            await Task.Delay(150);
+            if (_disposed || _rdpClient is null || _lastConnectionInfo is null)
+                return;
+
+            RaiseNotification(
+                "NLA/CredSSP negotiation failed. Retrying without NLA…",
+                NotificationSeverity.Warning);
+
+            // Re-apply settings with CredSSP disabled
+            ApplyConnectionSettings(_rdpClient, _lastConnectionInfo);
+            var adv = _rdpClient.AdvancedSettings;
+            adv.EnableCredSspSupport = false;
+            adv.AuthenticationLevel  = 0u;
+
+            _rdpClient.Connect();
+        }
+        catch (Exception ex)
+        {
+            LastDisconnectReason = $"NLA fallback retry failed: {ex.Message}";
             State                = SessionState.Error;
             RaiseNotification(LastDisconnectReason, NotificationSeverity.Error);
         }
@@ -401,6 +467,7 @@ public sealed class RdpSession : IProtocolSession
         }
         else if (resMode.Equals("MatchMonitor", StringComparison.OrdinalIgnoreCase))
         {
+            // Set initial resolution to the monitor's bounds
             var screen = Screen.PrimaryScreen?.Bounds;
             if (screen is { Width: > 0, Height: > 0 })
             {
@@ -420,9 +487,11 @@ public sealed class RdpSession : IProtocolSession
         }
         else
         {
-            var workArea = Screen.PrimaryScreen?.WorkingArea;
-            client.DesktopWidth  = workArea is { Width: > 0 } ? Math.Max(800, workArea.Value.Width - 260) : 1280;
-            client.DesktopHeight = workArea is { Height: > 0 } ? Math.Max(600, workArea.Value.Height - 120) : 720;
+            // In Auto mode: default initial connection size to the full primary monitor resolution
+            // so remote desktop has ample space even before dynamic update kicks in
+            var screen = Screen.PrimaryScreen?.Bounds;
+            client.DesktopWidth  = screen is { Width: > 0 } ? screen.Value.Width : 1920;
+            client.DesktopHeight = screen is { Height: > 0 } ? screen.Value.Height : 1080;
         }
 
         // 4. Smart sizing (3.1)
@@ -627,12 +696,12 @@ public sealed class RdpSession : IProtocolSession
         {
             if (State == SessionState.Connected)
             {
-                bool smartSizing = _lastConnectionInfo?.RdpSettings?.SmartSizing ?? true;
-                if (!smartSizing)
+                var rdpSettings = _lastConnectionInfo?.RdpSettings;
+                string mode = rdpSettings?.ResolutionMode ?? "Auto";
+                // In Auto mode, dynamically adapt remote desktop resolution to the tab viewport
+                if (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase))
                 {
-                    uint scale = (uint)(_lastConnectionInfo?.RdpSettings?.DpiScaling is > 0
-                        ? _lastConnectionInfo.RdpSettings.DpiScaling.Value
-                        : 100);
+                    uint scale = (uint)(rdpSettings?.DpiScaling is > 0 ? rdpSettings.DpiScaling.Value : 100);
                     _rdpClient.UpdateSessionDisplaySettings((uint)width, (uint)height, scale);
                 }
             }

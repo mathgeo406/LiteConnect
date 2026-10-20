@@ -150,8 +150,17 @@ public sealed partial class RdpSessionViewModel : ObservableObject, ISessionTabV
                 ? dialog.Result.Hostname
                 : dialog.Result.Name;
 
-            if (_repository is not null)
-                await _repository.SaveConnectionAsync(dialog.Result);
+            if (_repository is not null && dialog.Result.GroupId != Guid.Empty)
+            {
+                try
+                {
+                    await _repository.SaveConnectionAsync(dialog.Result);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to save connection properties: {ex.Message}");
+                }
+            }
         }
     }
 
