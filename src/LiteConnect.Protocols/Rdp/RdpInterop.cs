@@ -126,7 +126,6 @@ public sealed class AxMsRdpClient9NotSafeForScripting : AxHost
         // on modern Windows 10/11 when hosted outside Internet Explorer.
         string[] candidates =
         [
-            ClsidMsTscAx13,
             ClsidMsTscAx12,
             ClsidMsTscAx11,
             ClsidMsTscAx10,
