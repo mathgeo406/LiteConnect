@@ -308,8 +308,17 @@ public sealed partial class SshSessionViewModel : ObservableObject, ISessionTabV
 
             _session.Terminal.ApplySettings(dialog.Result.SshSettings);
 
-            if (_repository is not null)
-                await _repository.SaveConnectionAsync(dialog.Result);
+            if (_repository is not null && dialog.Result.GroupId != Guid.Empty)
+            {
+                try
+                {
+                    await _repository.SaveConnectionAsync(dialog.Result);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to save connection properties: {ex.Message}");
+                }
+            }
         }
     }
 

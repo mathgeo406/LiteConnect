@@ -223,23 +223,35 @@ public sealed class RdpSession : IProtocolSession
         LastDisconnectReason = null;
         State                = SessionState.Connected;
 
-        // In Auto or dynamic mode, adjust remote desktop resolution to match container size on connect
-        if (_rdpClient is not null && _host is { ActualWidth: >= 200, ActualHeight: >= 200 })
+        // In Auto or dynamic mode, adjust remote desktop resolution to match container size on connect.
+        // Schedule after brief delay to allow WPF layout to measure the host container.
+        if (_rdpClient is not null)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                var rdpSettings = _lastConnectionInfo?.RdpSettings;
-                string mode = rdpSettings?.ResolutionMode ?? "Auto";
-                if (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+                await Task.Delay(250);
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    uint scale = (uint)(rdpSettings?.DpiScaling is > 0 ? rdpSettings.DpiScaling.Value : 100);
-                    _rdpClient.UpdateSessionDisplaySettings(
-                        (uint)_host.ActualWidth,
-                        (uint)_host.ActualHeight,
-                        scale);
-                }
-            }
-            catch { /* Best effort if server does not support dynamic resolution changes */ }
+                    if (_disposed || _rdpClient is null || State != SessionState.Connected)
+                        return;
+
+                    try
+                    {
+                        var rdpSettings = _lastConnectionInfo?.RdpSettings;
+                        string mode = rdpSettings?.ResolutionMode ?? "Auto";
+                        if (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase) &&
+                            _host is { ActualWidth: >= 200, ActualHeight: >= 200 })
+                        {
+                            uint scale = (uint)(rdpSettings?.DpiScaling is > 0 ? rdpSettings.DpiScaling.Value : 100);
+                            _rdpClient.UpdateSessionDisplaySettings(
+                                (uint)_host.ActualWidth,
+                                (uint)_host.ActualHeight,
+                                scale);
+                        }
+                    }
+                    catch { /* Best effort if server does not support dynamic resolution changes */ }
+                });
+            });
         }
     }
 
@@ -455,6 +467,7 @@ public sealed class RdpSession : IProtocolSession
         }
         else if (resMode.Equals("MatchMonitor", StringComparison.OrdinalIgnoreCase))
         {
+            // Set initial resolution to the monitor's bounds
             var screen = Screen.PrimaryScreen?.Bounds;
             if (screen is { Width: > 0, Height: > 0 })
             {
@@ -474,9 +487,11 @@ public sealed class RdpSession : IProtocolSession
         }
         else
         {
-            var workArea = Screen.PrimaryScreen?.WorkingArea;
-            client.DesktopWidth  = workArea is { Width: > 0 } ? Math.Max(800, workArea.Value.Width - 260) : 1280;
-            client.DesktopHeight = workArea is { Height: > 0 } ? Math.Max(600, workArea.Value.Height - 120) : 720;
+            // In Auto mode: default initial connection size to the full primary monitor resolution
+            // so remote desktop has ample space even before dynamic update kicks in
+            var screen = Screen.PrimaryScreen?.Bounds;
+            client.DesktopWidth  = screen is { Width: > 0 } ? screen.Value.Width : 1920;
+            client.DesktopHeight = screen is { Height: > 0 } ? screen.Value.Height : 1080;
         }
 
         // 4. Smart sizing (3.1)
