@@ -223,18 +223,23 @@ public sealed class RdpSession : IProtocolSession
         LastDisconnectReason = null;
         State                = SessionState.Connected;
 
-        // Apply custom DPI scaling if configured
-        var dpi = _lastConnectionInfo?.RdpSettings?.DpiScaling;
-        if (dpi is > 100 && _rdpClient is not null && _host is { ActualWidth: > 0, ActualHeight: > 0 })
+        // In Auto or dynamic mode, adjust remote desktop resolution to match container size on connect
+        if (_rdpClient is not null && _host is { ActualWidth: >= 200, ActualHeight: >= 200 })
         {
             try
             {
-                _rdpClient.UpdateSessionDisplaySettings(
-                    (uint)_host.ActualWidth,
-                    (uint)_host.ActualHeight,
-                    (uint)dpi.Value);
+                var rdpSettings = _lastConnectionInfo?.RdpSettings;
+                string mode = rdpSettings?.ResolutionMode ?? "Auto";
+                if (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+                {
+                    uint scale = (uint)(rdpSettings?.DpiScaling is > 0 ? rdpSettings.DpiScaling.Value : 100);
+                    _rdpClient.UpdateSessionDisplaySettings(
+                        (uint)_host.ActualWidth,
+                        (uint)_host.ActualHeight,
+                        scale);
+                }
             }
-            catch { /* Best effort if server supports dynamic display updates */ }
+            catch { /* Best effort if server does not support dynamic resolution changes */ }
         }
     }
 
@@ -676,12 +681,12 @@ public sealed class RdpSession : IProtocolSession
         {
             if (State == SessionState.Connected)
             {
-                bool smartSizing = _lastConnectionInfo?.RdpSettings?.SmartSizing ?? true;
-                if (!smartSizing)
+                var rdpSettings = _lastConnectionInfo?.RdpSettings;
+                string mode = rdpSettings?.ResolutionMode ?? "Auto";
+                // In Auto mode, dynamically adapt remote desktop resolution to the tab viewport
+                if (mode.Equals("Auto", StringComparison.OrdinalIgnoreCase))
                 {
-                    uint scale = (uint)(_lastConnectionInfo?.RdpSettings?.DpiScaling is > 0
-                        ? _lastConnectionInfo.RdpSettings.DpiScaling.Value
-                        : 100);
+                    uint scale = (uint)(rdpSettings?.DpiScaling is > 0 ? rdpSettings.DpiScaling.Value : 100);
                     _rdpClient.UpdateSessionDisplaySettings((uint)width, (uint)height, scale);
                 }
             }

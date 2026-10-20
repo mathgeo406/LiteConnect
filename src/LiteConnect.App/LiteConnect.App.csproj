@@ -10,6 +10,7 @@
     <RootNamespace>LiteConnect.App</RootNamespace>
     <AssemblyName>LiteConnect</AssemblyName>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Publish settings (RID supplied at publish time, not here) -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
